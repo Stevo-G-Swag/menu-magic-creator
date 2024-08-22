@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import MenuGenerator from '../components/MenuGenerator';
 import MenuSpecificationForm from '../components/MenuSpecificationForm';
+import OnboardingTour from '../components/OnboardingTour';
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -13,7 +14,10 @@ const CreateMenu = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold mb-6">Create OLLAMA Menu</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Create OLLAMA Menu</h1>
+        <OnboardingTour />
+      </div>
       <p className="text-gray-600 mb-8">Use this interface to create your custom OLLAMA mode menu with agents and selectable tools.</p>
       
       <Tabs defaultValue="specify">
@@ -33,12 +37,8 @@ const CreateMenu = () => {
             {menuSpecification && (
               <MenuGenerator
                 title={menuSpecification.title}
-                agents={menuSpecification.agents.map(a => a.name).join(',')}
-                tools={menuSpecification.tools.map(t => t.name).join(',')}
-                customizations={JSON.stringify({
-                  agents: menuSpecification.agents,
-                  tools: menuSpecification.tools
-                })}
+                agents={menuSpecification.agents}
+                tools={menuSpecification.tools}
               />
             )}
           </Card>
