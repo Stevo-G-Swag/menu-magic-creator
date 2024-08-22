@@ -1,11 +1,21 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import React from 'react';
+import { Button } from "@/components/ui/button";
+import { Link } from 'react-router-dom';
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <div className="min-h-screen flex flex-col justify-center items-center bg-gray-100">
+      <h1 className="text-5xl font-bold mb-6 text-center">Welcome to AgentForge</h1>
+      <p className="text-xl text-gray-600 mb-8 text-center max-w-2xl">
+        Create advanced OLLAMA mode menus with agents and selectable tools using AI-powered code generation.
+      </p>
+      <div className="space-x-4">
+        <Button asChild>
+          <Link to="/create">Create Menu</Link>
+        </Button>
+        <Button variant="outline" asChild>
+          <Link to="/templates">Browse Templates</Link>
+        </Button>
       </div>
     </div>
   );
