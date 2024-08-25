@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import MenuPreview from './MenuPreview';
 
 const MenuGenerator = ({ title, agents, tools, customizations }) => {
@@ -11,6 +12,21 @@ const MenuGenerator = ({ title, agents, tools, customizations }) => {
     setIsLoading(true);
     setError(null);
     try {
+      // For development purposes, simulate a successful response
+      // Remove this and uncomment the fetch call when the backend is ready
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      setGeneratedCode(`
+        // Sample generated code
+        const OllamaMenu = {
+          title: "${title}",
+          agents: ${JSON.stringify(agents, null, 2)},
+          tools: ${JSON.stringify(tools, null, 2)},
+          // Add more generated code here
+        };
+      `);
+
+      // Uncomment this when the backend is ready
+      /*
       const response = await fetch('/api/generate-menu', {
         method: 'POST',
         headers: {
@@ -19,13 +35,14 @@ const MenuGenerator = ({ title, agents, tools, customizations }) => {
         body: JSON.stringify({ title, agents, tools, customizations }),
       });
       if (!response.ok) {
-        throw new Error('Failed to generate menu');
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
       setGeneratedCode(data.code);
+      */
     } catch (error) {
       console.error('Error generating menu:', error);
-      setError('An error occurred while generating the menu. Please try again.');
+      setError(`Failed to generate menu: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -38,7 +55,10 @@ const MenuGenerator = ({ title, agents, tools, customizations }) => {
       </Button>
       
       {error && (
-        <div className="text-red-500">{error}</div>
+        <Alert variant="destructive">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       {generatedCode && (
