@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import MenuGenerator from '../components/MenuGenerator';
 import MenuSpecificationForm from '../components/MenuSpecificationForm';
-import OnboardingTour from '../components/OnboardingTour';
+import GuidedTour from '../components/GuidedTour';
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -16,7 +16,7 @@ const CreateMenu = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Create OLLAMA Menu</h1>
-        <OnboardingTour />
+        <GuidedTour />
       </div>
       <p className="text-gray-600 mb-8">Use this interface to create your custom OLLAMA mode menu with agents and selectable tools.</p>
       
