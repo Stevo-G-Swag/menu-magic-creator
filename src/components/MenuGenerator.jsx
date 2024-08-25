@@ -16,7 +16,7 @@ const MenuGenerator = ({ title, agents, tools, customizations }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ title, agents: agents.split(','), tools: tools.split(','), customizations }),
+        body: JSON.stringify({ title, agents, tools, customizations }),
       });
       if (!response.ok) {
         throw new Error('Failed to generate menu');
@@ -44,7 +44,7 @@ const MenuGenerator = ({ title, agents, tools, customizations }) => {
       {generatedCode && (
         <div className="space-y-4">
           <h3 className="text-xl font-bold">Generated Menu Preview:</h3>
-          <MenuPreview html={generatedCode} />
+          <MenuPreview title={title} agents={agents} tools={tools} />
           <div>
             <h3 className="text-xl font-bold mb-2">Generated Code:</h3>
             <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">

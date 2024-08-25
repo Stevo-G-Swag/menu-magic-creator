@@ -39,6 +39,7 @@ const CreateMenu = () => {
                 title={menuSpecification.title}
                 agents={menuSpecification.agents}
                 tools={menuSpecification.tools}
+                customizations={menuSpecification.customizations}
               />
             )}
           </Card>
