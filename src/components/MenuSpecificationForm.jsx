@@ -8,10 +8,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useToast } from "@/components/ui/use-toast";
 import MenuPreview from './MenuPreview';
 
-const MenuSpecificationForm = ({ onSubmit }) => {
-  const [title, setTitle] = useState('');
-  const [agents, setAgents] = useState([{ name: '', description: '' }]);
-  const [tools, setTools] = useState([{ name: '', description: '' }]);
+const MenuSpecificationForm = ({ onSubmit, initialData }) => {
+  const [title, setTitle] = useState(initialData ? initialData.title : '');
+  const [agents, setAgents] = useState(initialData && initialData.agents.length > 0 ? initialData.agents : [{ name: '', description: '' }]);
+  const [tools, setTools] = useState(initialData && initialData.tools.length > 0 ? initialData.tools : [{ name: '', description: '' }]);
   const [errors, setErrors] = useState({});
   const [isValid, setIsValid] = useState(false);
   const { toast } = useToast();
