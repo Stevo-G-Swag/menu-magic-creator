@@ -14,7 +14,7 @@ const CreateMenu = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
         <h1 className="text-3xl font-bold">Create OLLAMA Menu</h1>
         <GuidedTour />
       </div>

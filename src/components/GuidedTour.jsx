@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useToast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
 
 const steps = [
   { title: "Welcome", content: "Welcome to the Menu Creator! Let's get started with a quick tour." },
@@ -15,31 +16,32 @@ const GuidedTour = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const { toast } = useToast();
 
-  useEffect(() => {
+  const showNextStep = () => {
     if (currentStep < steps.length) {
-      const timer = setTimeout(() => {
-        toast({
-          title: steps[currentStep].title,
-          description: steps[currentStep].content,
-        });
-        setCurrentStep(currentStep + 1);
-      }, 5000);
-
-      return () => clearTimeout(timer);
+      toast({
+        title: steps[currentStep].title,
+        description: steps[currentStep].content,
+      });
+      setCurrentStep(currentStep + 1);
     }
-  }, [currentStep, toast]);
+  };
 
   const startTour = () => {
     setCurrentStep(0);
+    showNextStep();
   };
 
   return (
-    <button
-      onClick={startTour}
-      className="text-blue-500 hover:text-blue-700 font-semibold"
-    >
-      Start Guided Tour
-    </button>
+    <div className="space-y-4">
+      <Button onClick={startTour} variant="outline">
+        Start Guided Tour
+      </Button>
+      {currentStep > 0 && currentStep < steps.length && (
+        <Button onClick={showNextStep} variant="secondary">
+          Next Step
+        </Button>
+      )}
+    </div>
   );
 };
 
