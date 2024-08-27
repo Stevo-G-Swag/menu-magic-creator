@@ -41,6 +41,13 @@ const templates = [
 ];
 
 const TemplateSelector = ({ onSelectTemplate }) => {
+  const handleSelectTemplate = (template) => {
+    onSelectTemplate({
+      title: template.name,
+      agents: template.agents,
+      tools: template.tools
+    });
+  };
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {templates.map((template) => (

@@ -4,33 +4,40 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export async function generateMenuCode(title, agents, tools, customizations) {
+export async function generateModMenu(title, agents, tools, customizations) {
   const prompt = `
-    Create an OLLAMA mode menu with the following specifications:
+    Create a minimalist mod menu for an agentic AI LLM system with the following specifications:
     Title: ${title}
     Agents: ${JSON.stringify(agents)}
     Tools: ${JSON.stringify(tools)}
     Customizations: ${JSON.stringify(customizations)}
 
-    Generate HTML, CSS, and JavaScript code for a responsive and accessible menu.
-    Use best practices for performance and follow WCAG 2.1 guidelines for accessibility.
-    Include comments explaining the code structure and functionality.
+    The menu should have a compact design with a red background and white text.
+    Include the following main categories:
+    1. Agent Configuration
+    2. Core Settings
+    3. Advanced Settings
+    4. Model Configuration
+
+    Under each category, list relevant options based on the provided agents and tools.
+    The output should be a JSON array of menu items, including categories and their options.
   `;
 
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
-        { role: "system", content: "You are a skilled web developer specializing in creating OLLAMA mode menus with agents and tools." },
+        { role: "system", content: "You are a skilled AI assistant specializing in creating mod menus for AI systems." },
         { role: "user", content: prompt }
       ],
       max_tokens: 2000,
       temperature: 0.7,
     });
 
-    return response.choices[0].message.content;
+    const menuItems = JSON.parse(response.choices[0].message.content);
+    return menuItems;
   } catch (error) {
     console.error('Error calling OpenAI API:', error);
-    throw new Error('Failed to generate menu code');
+    throw new Error('Failed to generate mod menu');
   }
 }

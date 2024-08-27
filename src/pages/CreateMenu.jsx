@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import MenuGenerator from '../components/MenuGenerator';
 import MenuSpecificationForm from '../components/MenuSpecificationForm';
 import GuidedTour from '../components/GuidedTour';
@@ -7,6 +8,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const CreateMenu = () => {
   const [menuSpecification, setMenuSpecification] = useState(null);
+  const [initialData, setInitialData] = useState(null);
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state && location.state.template) {
+      setInitialData(location.state.template);
+    }
+  }, [location]);
 
   const handleSpecificationSubmit = (specification) => {
     setMenuSpecification(specification);
@@ -28,7 +37,7 @@ const CreateMenu = () => {
         <TabsContent value="specify">
           <Card className="p-6">
             <h2 className="text-2xl font-semibold mb-4">Menu Specification</h2>
-            <MenuSpecificationForm onSubmit={handleSpecificationSubmit} />
+            <MenuSpecificationForm onSubmit={handleSpecificationSubmit} initialData={initialData} />
           </Card>
         </TabsContent>
         <TabsContent value="generate">
