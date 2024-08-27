@@ -6,8 +6,10 @@ const Templates = () => {
   const navigate = useNavigate();
 
   const handleSelectTemplate = (template) => {
-    // Navigate to the CreateMenu page with the selected template data
-    navigate('/create', { state: { template } });
+    // Store the selected template in localStorage
+    localStorage.setItem('selectedTemplate', JSON.stringify(template));
+    // Navigate to the Index page
+    navigate('/');
   };
 
   return (

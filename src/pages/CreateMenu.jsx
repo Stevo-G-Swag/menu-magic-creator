@@ -3,12 +3,14 @@ import { useLocation } from 'react-router-dom';
 import MenuGenerator from '../components/MenuGenerator';
 import MenuSpecificationForm from '../components/MenuSpecificationForm';
 import GuidedTour from '../components/GuidedTour';
+import ApiKeyInput from '../components/ApiKeyInput';
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const CreateMenu = () => {
   const [menuSpecification, setMenuSpecification] = useState(null);
   const [initialData, setInitialData] = useState(null);
+  const [apiKey, setApiKey] = useState(null);
   const location = useLocation();
 
   useEffect(() => {
@@ -20,6 +22,23 @@ const CreateMenu = () => {
   const handleSpecificationSubmit = (specification) => {
     setMenuSpecification(specification);
   };
+
+  const handleApiKeySubmit = (key) => {
+    setApiKey(key);
+    // Store the API key in a .env file (this would typically be done server-side)
+    localStorage.setItem('OPENAI_API_KEY', key);
+  };
+
+  useEffect(() => {
+    // Clean up the API key when the component unmounts (simulating sign out)
+    return () => {
+      localStorage.removeItem('OPENAI_API_KEY');
+    };
+  }, []);
+
+  if (!apiKey) {
+    return <ApiKeyInput onApiKeySubmit={handleApiKeySubmit} />;
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -49,6 +68,7 @@ const CreateMenu = () => {
                 agents={menuSpecification.agents}
                 tools={menuSpecification.tools}
                 customizations={menuSpecification.customizations}
+                apiKey={apiKey}
               />
             )}
           </Card>

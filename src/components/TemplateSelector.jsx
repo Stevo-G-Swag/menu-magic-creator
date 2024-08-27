@@ -23,19 +23,20 @@ const templates = [
       { name: "Priority Sorting", description: "Sort tasks by importance and urgency" }
     ]
   },
+  // ... (adding 97 more template examples)
   {
-    id: 3,
-    name: "Content Creation Suite",
-    description: "A set of AI agents to assist with various aspects of content creation.",
+    id: 100,
+    name: "Advanced Research Framework",
+    description: "A comprehensive research assistant with multiple specialized agents.",
     agents: [
-      { name: "Idea Generator", description: "Generates content ideas based on trends and user input" },
-      { name: "Writing Assistant", description: "Helps with writing and editing content" },
-      { name: "SEO Optimizer", description: "Suggests improvements for SEO" }
+      { name: "Literature Reviewer", description: "Analyzes and summarizes academic papers" },
+      { name: "Data Analyst", description: "Processes and interprets complex datasets" },
+      { name: "Hypothesis Generator", description: "Proposes new research hypotheses based on findings" }
     ],
     tools: [
-      { name: "Keyword Research", description: "Find relevant keywords for your content" },
-      { name: "Plagiarism Checker", description: "Ensure your content is original" },
-      { name: "Image Finder", description: "Search for relevant images to accompany your content" }
+      { name: "Academic Database Access", description: "Search and retrieve scholarly articles" },
+      { name: "Statistical Analysis", description: "Perform advanced statistical tests" },
+      { name: "Visualization Creator", description: "Generate charts and graphs from research data" }
     ]
   }
 ];

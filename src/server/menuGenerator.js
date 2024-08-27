@@ -1,10 +1,4 @@
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-export async function generateModMenu(title, agents, tools, customizations) {
+export async function generateModMenu(openai, title, agents, tools, customizations) {
   const prompt = `
     Create a minimalist mod menu for an agentic AI LLM system with the following specifications:
     Title: ${title}
@@ -20,12 +14,12 @@ export async function generateModMenu(title, agents, tools, customizations) {
     4. Model Configuration
 
     Under each category, list relevant options based on the provided agents and tools.
-    The output should be a JSON array of menu items, including categories and their options.
+    The output should be a JSON array of menu categories, each containing a name and an array of items.
   `;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+    const response = await openai.createChatCompletion({
+      model: "gpt-4",
       messages: [
         { role: "system", content: "You are a skilled AI assistant specializing in creating mod menus for AI systems." },
         { role: "user", content: prompt }
@@ -34,10 +28,16 @@ export async function generateModMenu(title, agents, tools, customizations) {
       temperature: 0.7,
     });
 
-    const menuItems = JSON.parse(response.choices[0].message.content);
+    const menuItems = JSON.parse(response.data.choices[0].message.content);
     return menuItems;
   } catch (error) {
     console.error('Error calling OpenAI API:', error);
     throw new Error('Failed to generate mod menu');
   }
+}
+
+export async function createSandboxEnvironment(menuItems) {
+  // This is a placeholder function. In a real implementation, you would create a sandboxed
+  // environment and return a URL where it can be accessed.
+  return `https://codesandbox.io/s/new?file=/src/App.js:${encodeURIComponent(JSON.stringify(menuItems))}`;
 }

@@ -1,8 +1,18 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Index = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const selectedTemplate = localStorage.getItem('selectedTemplate');
+    if (selectedTemplate) {
+      localStorage.removeItem('selectedTemplate');
+      navigate('/create', { state: { template: JSON.parse(selectedTemplate) } });
+    }
+  }, [navigate]);
+
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-100">
       <h1 className="text-5xl font-bold mb-6 text-center">Welcome to AgentForge</h1>
