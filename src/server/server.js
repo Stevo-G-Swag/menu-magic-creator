@@ -11,8 +11,12 @@ import fetch from 'node-fetch';
 import { generateModMenu, createSandboxEnvironment } from './menuGenerator.js';
 import User from './models/User.js';
 import Setting from './models/Setting.js';
+import Admin from './models/Admin.js';
 import authMiddleware from './middleware/authMiddleware.js';
 import errorHandler from './middleware/errorHandler.js';
+import passport from 'passport';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { Strategy as AppleStrategy } from 'passport-apple';
 
 dotenv.config();
 
@@ -24,6 +28,52 @@ mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTop
   .catch(err => console.error('MongoDB connection error:', err));
 
 app.use(express.json());
+app.use(passport.initialize());
+
+// Passport strategies configuration
+passport.use(new GoogleStrategy({
+  clientID: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  callbackURL: "/api/auth/google/callback"
+}, async (accessToken, refreshToken, profile, done) => {
+  try {
+    let user = await User.findOne({ googleId: profile.id });
+    if (!user) {
+      user = new User({
+        googleId: profile.id,
+        email: profile.emails[0].value,
+        username: profile.displayName
+      });
+      await user.save();
+    }
+    return done(null, user);
+  } catch (error) {
+    return done(error, null);
+  }
+}));
+
+passport.use(new AppleStrategy({
+  clientID: process.env.APPLE_CLIENT_ID,
+  teamID: process.env.APPLE_TEAM_ID,
+  callbackURL: "/api/auth/apple/callback",
+  keyID: process.env.APPLE_KEY_ID,
+  privateKeyLocation: process.env.APPLE_PRIVATE_KEY_LOCATION,
+}, async (accessToken, refreshToken, profile, done) => {
+  try {
+    let user = await User.findOne({ appleId: profile.id });
+    if (!user) {
+      user = new User({
+        appleId: profile.id,
+        email: profile.email,
+        username: profile.name.firstName + ' ' + profile.name.lastName
+      });
+      await user.save();
+    }
+    return done(null, user);
+  } catch (error) {
+    return done(error, null);
+  }
+}));
 
 const getProviderClient = async (userId, provider) => {
   const user = await User.findById(userId);
@@ -114,7 +164,7 @@ app.post('/api/run-task', authMiddleware, async (req, res, next) => {
   }
 });
 
-app.post('/api/register', async (req, res, next) => {
+app.post('/api/signup', async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const existingUser = await User.findOne({ email });
@@ -145,6 +195,20 @@ app.post('/api/login', async (req, res, next) => {
   }
 });
 
+app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+app.get('/api/auth/google/callback', passport.authenticate('google', { session: false }), (req, res) => {
+  const token = jwt.sign({ userId: req.user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  res.redirect(`/?token=${token}`);
+});
+
+app.get('/api/auth/apple', passport.authenticate('apple'));
+
+app.get('/api/auth/apple/callback', passport.authenticate('apple', { session: false }), (req, res) => {
+  const token = jwt.sign({ userId: req.user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  res.redirect(`/?token=${token}`);
+});
+
 app.get('/api/user/settings', authMiddleware, async (req, res, next) => {
   try {
     const settings = await Setting.findOne({ user: req.user._id });
@@ -171,6 +235,30 @@ app.post('/api/user/settings', authMiddleware, async (req, res, next) => {
     settings.openrouterApiKey = openrouterApiKey;
     await settings.save();
     res.json({ message: 'Settings updated successfully' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/admin/check-first-login', async (req, res, next) => {
+  try {
+    const admin = await Admin.findOne();
+    res.json({ isFirstLogin: !admin });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/admin/change-password', async (req, res, next) => {
+  try {
+    const { newPassword } = req.body;
+    let admin = await Admin.findOne();
+    if (!admin) {
+      admin = new Admin();
+    }
+    admin.password = await bcrypt.hash(newPassword, 10);
+    await admin.save();
+    res.json({ message: 'Admin password changed successfully' });
   } catch (error) {
     next(error);
   }
