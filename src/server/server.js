@@ -6,6 +6,8 @@ import { Octokit } from '@octokit/rest';
 import { generateModMenu, createSandboxEnvironment } from './menuGenerator.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { LiteLLM } from 'litellm';
+import fetch from 'node-fetch';
 
 dotenv.config();
 
@@ -26,7 +28,10 @@ const configureProvider = (provider, apiKey) => {
       return new HfInference(apiKey);
     case 'github':
       return new Octokit({ auth: apiKey });
-    // Add cases for litellm and openrouter as needed
+    case 'litellm':
+      return new LiteLLM({ apiKey });
+    case 'openrouter':
+      return { apiKey }; // OpenRouter doesn't have a specific client, we'll use fetch
     default:
       throw new Error('Unsupported provider');
   }
@@ -62,12 +67,36 @@ app.post('/api/run-task', async (req, res) => {
         result = completion.data.choices[0].message.content;
         break;
       case 'huggingface':
-        // Implement Hugging Face API call
+        const hfResponse = await providerClient.textGeneration({
+          model: 'gpt2',
+          inputs: `Execute the following task: ${task}`,
+        });
+        result = hfResponse.generated_text;
         break;
       case 'github':
         // Implement GitHub API call
         break;
-      // Add cases for litellm and openrouter as needed
+      case 'litellm':
+        const liteLLMResponse = await providerClient.complete({
+          messages: [{ role: "user", content: `Execute the following task: ${task}` }],
+        });
+        result = liteLLMResponse.choices[0].message.content;
+        break;
+      case 'openrouter':
+        const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: 'openai/gpt-3.5-turbo',
+            messages: [{ role: "user", content: `Execute the following task: ${task}` }],
+          }),
+        });
+        const openRouterData = await openRouterResponse.json();
+        result = openRouterData.choices[0].message.content;
+        break;
     }
 
     res.json({ message: result });
@@ -113,7 +142,6 @@ app.get('/api/auth/github', (req, res) => {
 app.get('/api/auth/github/callback', async (req, res) => {
   const { code } = req.query;
   try {
-    // Exchange code for access token
     const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
       method: 'POST',
       headers: {
@@ -128,7 +156,6 @@ app.get('/api/auth/github/callback', async (req, res) => {
     });
     const { access_token } = await tokenResponse.json();
 
-    // Use access token to get user data
     const userResponse = await fetch('https://api.github.com/user', {
       headers: {
         Authorization: `Bearer ${access_token}`,
@@ -136,7 +163,6 @@ app.get('/api/auth/github/callback', async (req, res) => {
     });
     const userData = await userResponse.json();
 
-    // Create or update user in your system
     const user = { email: userData.email, githubId: userData.id };
     const existingUser = users.find(u => u.githubId === userData.id);
     if (existingUser) {

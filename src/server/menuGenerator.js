@@ -1,3 +1,5 @@
+import fetch from 'node-fetch';
+
 export async function generateModMenu(providerClient, provider, title, agents, tools, customizations) {
   const prompt = `
     Create a minimalist mod menu for an agentic AI LLM system with the following specifications:
@@ -33,7 +35,6 @@ export async function generateModMenu(providerClient, provider, title, agents, t
         menuItems = JSON.parse(response.data.choices[0].message.content);
         break;
       case 'huggingface':
-        // Implement Hugging Face API call
         const hfResponse = await providerClient.textGeneration({
           model: 'gpt2',
           inputs: prompt,
@@ -45,7 +46,6 @@ export async function generateModMenu(providerClient, provider, title, agents, t
         menuItems = JSON.parse(hfResponse.generated_text);
         break;
       case 'github':
-        // For GitHub, we'll use it to fetch a template and then modify it
         const { data } = await providerClient.repos.getContent({
           owner: 'your-org',
           repo: 'menu-templates',
@@ -54,7 +54,37 @@ export async function generateModMenu(providerClient, provider, title, agents, t
         const template = JSON.parse(Buffer.from(data.content, 'base64').toString());
         menuItems = modifyTemplate(template, { title, agents, tools, customizations });
         break;
-      // Add cases for litellm and openrouter as needed
+      case 'litellm':
+        const liteLLMResponse = await providerClient.complete({
+          messages: [
+            { role: "system", content: "You are a skilled AI assistant specializing in creating mod menus for AI systems." },
+            { role: "user", content: prompt }
+          ],
+          max_tokens: 2000,
+          temperature: 0.7,
+        });
+        menuItems = JSON.parse(liteLLMResponse.choices[0].message.content);
+        break;
+      case 'openrouter':
+        const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${providerClient.apiKey}`,
+          },
+          body: JSON.stringify({
+            model: 'openai/gpt-3.5-turbo',
+            messages: [
+              { role: "system", content: "You are a skilled AI assistant specializing in creating mod menus for AI systems." },
+              { role: "user", content: prompt }
+            ],
+            max_tokens: 2000,
+            temperature: 0.7,
+          }),
+        });
+        const openRouterData = await openRouterResponse.json();
+        menuItems = JSON.parse(openRouterData.choices[0].message.content);
+        break;
     }
     return menuItems;
   } catch (error) {
@@ -64,8 +94,6 @@ export async function generateModMenu(providerClient, provider, title, agents, t
 }
 
 function modifyTemplate(template, { title, agents, tools, customizations }) {
-  // Logic to modify the template based on the provided specifications
-  // This is a placeholder and should be implemented based on your specific requirements
   template.title = title;
   template.agents = agents;
   template.tools = tools;
@@ -74,7 +102,54 @@ function modifyTemplate(template, { title, agents, tools, customizations }) {
 }
 
 export async function createSandboxEnvironment(menuItems) {
-  // This is a placeholder function. In a real implementation, you would create a sandboxed
-  // environment and return a URL where it can be accessed.
-  return `https://codesandbox.io/s/new?file=/src/App.js:${encodeURIComponent(JSON.stringify(menuItems))}`;
+  const sandboxCode = `
+    import React from 'react';
+    import ReactDOM from 'react-dom';
+
+    const ModMenu = ({ menuItems }) => (
+      <div style={{ backgroundColor: 'red', color: 'white', padding: '20px' }}>
+        <h1>${menuItems[0].title}</h1>
+        {menuItems.map((category, index) => (
+          <div key={index}>
+            <h2>{category.name}</h2>
+            <ul>
+              {category.items.map((item, itemIndex) => (
+                <li key={itemIndex}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    );
+
+    ReactDOM.render(
+      <ModMenu menuItems={${JSON.stringify(menuItems)}} />,
+      document.getElementById('root')
+    );
+  `;
+
+  const sandboxConfig = {
+    files: {
+      'index.js': {
+        content: sandboxCode,
+      },
+    },
+    template: 'create-react-app',
+  };
+
+  try {
+    const response = await fetch('https://codesandbox.io/api/v1/sandboxes/define?json=1', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(sandboxConfig),
+    });
+
+    const data = await response.json();
+    return `https://codesandbox.io/s/${data.sandbox_id}`;
+  } catch (error) {
+    console.error('Error creating sandbox:', error);
+    throw new Error('Failed to create sandbox environment');
+  }
 }

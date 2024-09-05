@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
+import { Github } from 'lucide-react';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -63,12 +64,14 @@ const Auth = () => {
                 placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                required
               />
               <Input
                 type="password"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                required
               />
               <Button type="submit" className="w-full">Login</Button>
             </form>
@@ -80,12 +83,14 @@ const Auth = () => {
                 placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                required
               />
               <Input
                 type="password"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                required
               />
               <Button type="submit" className="w-full">Register</Button>
             </form>
@@ -93,6 +98,7 @@ const Auth = () => {
         </Tabs>
         <div className="mt-4">
           <Button onClick={handleGitHubSignIn} variant="outline" className="w-full">
+            <Github className="mr-2 h-4 w-4" />
             Sign in with GitHub
           </Button>
         </div>
