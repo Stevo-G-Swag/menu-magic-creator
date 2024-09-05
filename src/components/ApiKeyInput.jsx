@@ -24,10 +24,6 @@ const ApiKeyInput = ({ onApiKeySubmit }) => {
     }
   };
 
-  const handleGitHubSignIn = () => {
-    window.location.href = '/api/auth/github';
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent>
@@ -46,11 +42,6 @@ const ApiKeyInput = ({ onApiKeySubmit }) => {
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
             />
-          )}
-          {provider === 'github' && (
-            <Button type="button" onClick={handleGitHubSignIn}>
-              Sign in with GitHub
-            </Button>
           )}
           <Button type="submit" disabled={!provider || (!apiKey && provider !== 'huggingface' && provider !== 'github')}>
             Submit
