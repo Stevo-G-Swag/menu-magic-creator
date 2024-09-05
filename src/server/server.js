@@ -6,6 +6,7 @@ import { Octokit } from '@octokit/rest';
 import { generateModMenu, createSandboxEnvironment } from './menuGenerator.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import fetch from 'node-fetch';
 
 dotenv.config();
 
@@ -26,7 +27,12 @@ const configureProvider = (provider, apiKey) => {
       return new HfInference(apiKey);
     case 'github':
       return new Octokit({ auth: apiKey });
-    // Add cases for litellm and openrouter as needed
+    case 'litellm':
+      // Implement LiteLLM configuration
+      return { apiKey };
+    case 'openrouter':
+      // Implement OpenRouter configuration
+      return { apiKey };
     default:
       throw new Error('Unsupported provider');
   }
@@ -62,12 +68,21 @@ app.post('/api/run-task', async (req, res) => {
         result = completion.data.choices[0].message.content;
         break;
       case 'huggingface':
-        // Implement Hugging Face API call
+        const hfResponse = await providerClient.textGeneration({
+          model: 'gpt2',
+          inputs: `Execute the following task: ${task}`,
+        });
+        result = hfResponse.generated_text;
         break;
       case 'github':
-        // Implement GitHub API call
+        // Implement GitHub API call for task execution
         break;
-      // Add cases for litellm and openrouter as needed
+      case 'litellm':
+        // Implement LiteLLM API call
+        break;
+      case 'openrouter':
+        // Implement OpenRouter API call
+        break;
     }
 
     res.json({ message: result });
@@ -113,7 +128,6 @@ app.get('/api/auth/github', (req, res) => {
 app.get('/api/auth/github/callback', async (req, res) => {
   const { code } = req.query;
   try {
-    // Exchange code for access token
     const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
       method: 'POST',
       headers: {
@@ -128,7 +142,6 @@ app.get('/api/auth/github/callback', async (req, res) => {
     });
     const { access_token } = await tokenResponse.json();
 
-    // Use access token to get user data
     const userResponse = await fetch('https://api.github.com/user', {
       headers: {
         Authorization: `Bearer ${access_token}`,
@@ -136,7 +149,6 @@ app.get('/api/auth/github/callback', async (req, res) => {
     });
     const userData = await userResponse.json();
 
-    // Create or update user in your system
     const user = { email: userData.email, githubId: userData.id };
     const existingUser = users.find(u => u.githubId === userData.id);
     if (existingUser) {
@@ -150,6 +162,29 @@ app.get('/api/auth/github/callback', async (req, res) => {
   } catch (error) {
     console.error('GitHub authentication error:', error);
     res.status(500).json({ error: 'GitHub authentication failed' });
+  }
+});
+
+app.get('/api/github/models', async (req, res) => {
+  try {
+    const token = req.headers.authorization.split(' ')[1];
+    const octokit = new Octokit({ auth: token });
+    
+    // Fetch repositories with 'model' in the name or description
+    const { data: repos } = await octokit.repos.listForAuthenticatedUser({
+      sort: 'updated',
+      per_page: 100,
+    });
+
+    const modelRepos = repos.filter(repo => 
+      repo.name.toLowerCase().includes('model') || 
+      (repo.description && repo.description.toLowerCase().includes('model'))
+    );
+
+    res.json(modelRepos);
+  } catch (error) {
+    console.error('Error fetching GitHub models:', error);
+    res.status(500).json({ error: 'Failed to fetch GitHub models' });
   }
 });
 
