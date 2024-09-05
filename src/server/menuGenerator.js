@@ -1,4 +1,4 @@
-export async function generateModMenu(openai, title, agents, tools, customizations) {
+export async function generateModMenu(providerClient, provider, title, agents, tools, customizations) {
   const prompt = `
     Create a minimalist mod menu for an agentic AI LLM system with the following specifications:
     Title: ${title}
@@ -18,22 +18,59 @@ export async function generateModMenu(openai, title, agents, tools, customizatio
   `;
 
   try {
-    const response = await openai.createChatCompletion({
-      model: "gpt-4",
-      messages: [
-        { role: "system", content: "You are a skilled AI assistant specializing in creating mod menus for AI systems." },
-        { role: "user", content: prompt }
-      ],
-      max_tokens: 2000,
-      temperature: 0.7,
-    });
-
-    const menuItems = JSON.parse(response.data.choices[0].message.content);
+    let menuItems;
+    switch (provider) {
+      case 'openai':
+        const response = await providerClient.createChatCompletion({
+          model: "gpt-4",
+          messages: [
+            { role: "system", content: "You are a skilled AI assistant specializing in creating mod menus for AI systems." },
+            { role: "user", content: prompt }
+          ],
+          max_tokens: 2000,
+          temperature: 0.7,
+        });
+        menuItems = JSON.parse(response.data.choices[0].message.content);
+        break;
+      case 'huggingface':
+        // Implement Hugging Face API call
+        const hfResponse = await providerClient.textGeneration({
+          model: 'gpt2',
+          inputs: prompt,
+          parameters: {
+            max_new_tokens: 2000,
+            temperature: 0.7,
+          },
+        });
+        menuItems = JSON.parse(hfResponse.generated_text);
+        break;
+      case 'github':
+        // For GitHub, we'll use it to fetch a template and then modify it
+        const { data } = await providerClient.repos.getContent({
+          owner: 'your-org',
+          repo: 'menu-templates',
+          path: 'default-template.json',
+        });
+        const template = JSON.parse(Buffer.from(data.content, 'base64').toString());
+        menuItems = modifyTemplate(template, { title, agents, tools, customizations });
+        break;
+      // Add cases for litellm and openrouter as needed
+    }
     return menuItems;
   } catch (error) {
-    console.error('Error calling OpenAI API:', error);
+    console.error(`Error calling ${provider} API:`, error);
     throw new Error('Failed to generate mod menu');
   }
+}
+
+function modifyTemplate(template, { title, agents, tools, customizations }) {
+  // Logic to modify the template based on the provided specifications
+  // This is a placeholder and should be implemented based on your specific requirements
+  template.title = title;
+  template.agents = agents;
+  template.tools = tools;
+  // Apply customizations
+  return template;
 }
 
 export async function createSandboxEnvironment(menuItems) {

@@ -9,7 +9,6 @@ import { useToast } from "@/components/ui/use-toast";
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [apiKey, setApiKey] = useState('');
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -18,7 +17,7 @@ const Auth = () => {
       const response = await fetch(`/api/${action}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, apiKey }),
+        body: JSON.stringify({ email, password }),
       });
       
       if (response.ok) {
@@ -42,6 +41,10 @@ const Auth = () => {
     }
   };
 
+  const handleGitHubSignIn = () => {
+    window.location.href = '/api/auth/github';
+  };
+
   return (
     <Card className="w-[350px]">
       <CardHeader>
@@ -54,51 +57,45 @@ const Auth = () => {
             <TabsTrigger value="register">Register</TabsTrigger>
           </TabsList>
           <TabsContent value="login">
-            <form onSubmit={(e) => { e.preventDefault(); handleAuth('login'); }}>
+            <form onSubmit={(e) => { e.preventDefault(); handleAuth('login'); }} className="space-y-4">
               <Input
                 type="email"
                 placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mb-2"
               />
               <Input
                 type="password"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mb-2"
               />
               <Button type="submit" className="w-full">Login</Button>
             </form>
           </TabsContent>
           <TabsContent value="register">
-            <form onSubmit={(e) => { e.preventDefault(); handleAuth('register'); }}>
+            <form onSubmit={(e) => { e.preventDefault(); handleAuth('register'); }} className="space-y-4">
               <Input
                 type="email"
                 placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mb-2"
               />
               <Input
                 type="password"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mb-2"
-              />
-              <Input
-                type="password"
-                placeholder="OpenAI API Key"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                className="mb-2"
               />
               <Button type="submit" className="w-full">Register</Button>
             </form>
           </TabsContent>
         </Tabs>
+        <div className="mt-4">
+          <Button onClick={handleGitHubSignIn} variant="outline" className="w-full">
+            Sign in with GitHub
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

@@ -11,6 +11,7 @@ const CreateMenu = () => {
   const [menuSpecification, setMenuSpecification] = useState(null);
   const [initialData, setInitialData] = useState(null);
   const [apiKey, setApiKey] = useState(null);
+  const [provider, setProvider] = useState(null);
   const location = useLocation();
 
   useEffect(() => {
@@ -23,18 +24,23 @@ const CreateMenu = () => {
     setMenuSpecification(specification);
   };
 
-  const handleApiKeySubmit = (key) => {
+  const handleApiKeySubmit = (selectedProvider, key) => {
+    setProvider(selectedProvider);
     setApiKey(key);
     // Store the API key in a .env file (this would typically be done server-side)
-    localStorage.setItem('OPENAI_API_KEY', key);
+    if (key !== 'free') {
+      localStorage.setItem(`${selectedProvider.toUpperCase()}_API_KEY`, key);
+    }
   };
 
   useEffect(() => {
     // Clean up the API key when the component unmounts (simulating sign out)
     return () => {
-      localStorage.removeItem('OPENAI_API_KEY');
+      if (provider && apiKey !== 'free') {
+        localStorage.removeItem(`${provider.toUpperCase()}_API_KEY`);
+      }
     };
-  }, []);
+  }, [provider, apiKey]);
 
   if (!apiKey) {
     return <ApiKeyInput onApiKeySubmit={handleApiKeySubmit} />;
@@ -68,6 +74,7 @@ const CreateMenu = () => {
                 agents={menuSpecification.agents}
                 tools={menuSpecification.tools}
                 customizations={menuSpecification.customizations}
+                provider={provider}
                 apiKey={apiKey}
               />
             )}
