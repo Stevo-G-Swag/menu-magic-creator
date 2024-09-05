@@ -10,6 +10,7 @@ import { LiteLLM } from 'litellm';
 import fetch from 'node-fetch';
 import { generateModMenu, createSandboxEnvironment } from './menuGenerator.js';
 import User from './models/User.js';
+import Setting from './models/Setting.js';
 import authMiddleware from './middleware/authMiddleware.js';
 import errorHandler from './middleware/errorHandler.js';
 
@@ -24,19 +25,25 @@ mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTop
 
 app.use(express.json());
 
-const configureProvider = (provider, apiKey) => {
+const getProviderClient = async (userId, provider) => {
+  const user = await User.findById(userId);
+  const settings = await Setting.findOne({ user: userId });
+
+  if (!settings) {
+    throw new Error('User settings not found');
+  }
+
   switch (provider) {
     case 'openai':
-      const configuration = new Configuration({ apiKey });
-      return new OpenAIApi(configuration);
+      return new OpenAIApi(new Configuration({ apiKey: settings.openaiApiKey }));
     case 'huggingface':
-      return new HfInference(apiKey);
+      return new HfInference(settings.huggingfaceApiKey);
     case 'github':
-      return new Octokit({ auth: apiKey });
+      return new Octokit({ auth: settings.githubAccessToken });
     case 'litellm':
-      return new LiteLLM({ apiKey });
+      return new LiteLLM({ apiKey: settings.litellmApiKey });
     case 'openrouter':
-      return { apiKey }; // OpenRouter doesn't have a specific client, we'll use fetch
+      return { apiKey: settings.openrouterApiKey };
     default:
       throw new Error('Unsupported provider');
   }
@@ -45,8 +52,7 @@ const configureProvider = (provider, apiKey) => {
 app.post('/api/generate-menu', authMiddleware, async (req, res, next) => {
   try {
     const { title, agents, tools, customizations, provider } = req.body;
-    const apiKey = req.headers.authorization.split(' ')[1];
-    const providerClient = configureProvider(provider, apiKey);
+    const providerClient = await getProviderClient(req.user._id, provider);
     const generatedMenu = await generateModMenu(providerClient, provider, title, agents, tools, customizations);
     const sandboxUrl = await createSandboxEnvironment(generatedMenu);
     res.json({ menu: generatedMenu, sandboxUrl });
@@ -58,8 +64,7 @@ app.post('/api/generate-menu', authMiddleware, async (req, res, next) => {
 app.post('/api/run-task', authMiddleware, async (req, res, next) => {
   try {
     const { task, provider } = req.body;
-    const apiKey = req.headers.authorization.split(' ')[1];
-    const providerClient = configureProvider(provider, apiKey);
+    const providerClient = await getProviderClient(req.user._id, provider);
     
     let result;
     switch (provider) {
@@ -91,7 +96,7 @@ app.post('/api/run-task', authMiddleware, async (req, res, next) => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
+            'Authorization': `Bearer ${providerClient.apiKey}`,
           },
           body: JSON.stringify({
             model: 'openai/gpt-3.5-turbo',
@@ -140,47 +145,32 @@ app.post('/api/login', async (req, res, next) => {
   }
 });
 
-app.get('/api/auth/github', (req, res) => {
-  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${process.env.GITHUB_CLIENT_ID}&scope=user:email`;
-  res.redirect(githubAuthUrl);
+app.get('/api/user/settings', authMiddleware, async (req, res, next) => {
+  try {
+    const settings = await Setting.findOne({ user: req.user._id });
+    if (!settings) {
+      return res.status(404).json({ error: 'Settings not found' });
+    }
+    res.json(settings);
+  } catch (error) {
+    next(error);
+  }
 });
 
-app.get('/api/auth/github/callback', async (req, res, next) => {
-  const { code } = req.query;
+app.post('/api/user/settings', authMiddleware, async (req, res, next) => {
   try {
-    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({
-        client_id: process.env.GITHUB_CLIENT_ID,
-        client_secret: process.env.GITHUB_CLIENT_SECRET,
-        code,
-      }),
-    });
-    const { access_token } = await tokenResponse.json();
-
-    const userResponse = await fetch('https://api.github.com/user', {
-      headers: {
-        Authorization: `Bearer ${access_token}`,
-      },
-    });
-    const userData = await userResponse.json();
-
-    let user = await User.findOne({ githubId: userData.id });
-    if (!user) {
-      user = new User({
-        email: userData.email,
-        githubId: userData.id,
-        username: userData.login,
-      });
-      await user.save();
+    const { openaiApiKey, githubClientId, githubClientSecret, litellmApiKey, openrouterApiKey } = req.body;
+    let settings = await Setting.findOne({ user: req.user._id });
+    if (!settings) {
+      settings = new Setting({ user: req.user._id });
     }
-
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.redirect(`/?token=${token}`);
+    settings.openaiApiKey = openaiApiKey;
+    settings.githubClientId = githubClientId;
+    settings.githubClientSecret = githubClientSecret;
+    settings.litellmApiKey = litellmApiKey;
+    settings.openrouterApiKey = openrouterApiKey;
+    await settings.save();
+    res.json({ message: 'Settings updated successfully' });
   } catch (error) {
     next(error);
   }
