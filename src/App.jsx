@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import CreateMenu from "./pages/CreateMenu";
 import Templates from "./pages/Templates";
+import ErrorHandler from "./components/ErrorHandler";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/create" element={<CreateMenu />} />
               <Route path="/templates" element={<Templates />} />
+              <Route path="/error" element={<ErrorHandler />} />
             </Routes>
           </main>
           <Footer />
