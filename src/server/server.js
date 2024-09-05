@@ -1,23 +1,28 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import { Configuration, OpenAIApi } from 'openai';
 import { HfInference } from '@huggingface/inference';
 import { Octokit } from '@octokit/rest';
-import { generateModMenu, createSandboxEnvironment } from './menuGenerator.js';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 import { LiteLLM } from 'litellm';
 import fetch from 'node-fetch';
+import { generateModMenu, createSandboxEnvironment } from './menuGenerator.js';
+import User from './models/User.js';
+import authMiddleware from './middleware/authMiddleware.js';
+import errorHandler from './middleware/errorHandler.js';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3001;
 
-app.use(express.json());
+mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
-// In-memory user storage (replace with a database in production)
-const users = [];
+app.use(express.json());
 
 const configureProvider = (provider, apiKey) => {
   switch (provider) {
@@ -37,7 +42,7 @@ const configureProvider = (provider, apiKey) => {
   }
 };
 
-app.post('/api/generate-menu', async (req, res) => {
+app.post('/api/generate-menu', authMiddleware, async (req, res, next) => {
   try {
     const { title, agents, tools, customizations, provider } = req.body;
     const apiKey = req.headers.authorization.split(' ')[1];
@@ -46,12 +51,11 @@ app.post('/api/generate-menu', async (req, res) => {
     const sandboxUrl = await createSandboxEnvironment(generatedMenu);
     res.json({ menu: generatedMenu, sandboxUrl });
   } catch (error) {
-    console.error('Error generating mod menu:', error);
-    res.status(500).json({ error: 'An error occurred while generating the mod menu.' });
+    next(error);
   }
 });
 
-app.post('/api/run-task', async (req, res) => {
+app.post('/api/run-task', authMiddleware, async (req, res, next) => {
   try {
     const { task, provider } = req.body;
     const apiKey = req.headers.authorization.split(' ')[1];
@@ -101,36 +105,38 @@ app.post('/api/run-task', async (req, res) => {
 
     res.json({ message: result });
   } catch (error) {
-    console.error('Error running task:', error);
-    res.status(500).json({ error: 'An error occurred while running the task.' });
+    next(error);
   }
 });
 
-app.post('/api/register', async (req, res) => {
+app.post('/api/register', async (req, res, next) => {
   try {
     const { email, password } = req.body;
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ error: 'User already exists' });
+    }
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = { email, password: hashedPassword };
-    users.push(user);
-    const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const user = new User({ email, password: hashedPassword });
+    await user.save();
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.json({ token, user: { email: user.email } });
   } catch (error) {
-    res.status(500).json({ error: 'Error registering user' });
+    next(error);
   }
 });
 
-app.post('/api/login', async (req, res) => {
+app.post('/api/login', async (req, res, next) => {
   try {
     const { email, password } = req.body;
-    const user = users.find(u => u.email === email);
-    if (user && await bcrypt.compare(password, user.password)) {
-      const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
-      res.json({ token, user: { email: user.email } });
-    } else {
-      res.status(401).json({ error: 'Invalid credentials' });
+    const user = await User.findOne({ email });
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.json({ token, user: { email: user.email } });
   } catch (error) {
-    res.status(500).json({ error: 'Error logging in' });
+    next(error);
   }
 });
 
@@ -139,7 +145,7 @@ app.get('/api/auth/github', (req, res) => {
   res.redirect(githubAuthUrl);
 });
 
-app.get('/api/auth/github/callback', async (req, res) => {
+app.get('/api/auth/github/callback', async (req, res, next) => {
   const { code } = req.query;
   try {
     const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
@@ -163,21 +169,24 @@ app.get('/api/auth/github/callback', async (req, res) => {
     });
     const userData = await userResponse.json();
 
-    const user = { email: userData.email, githubId: userData.id };
-    const existingUser = users.find(u => u.githubId === userData.id);
-    if (existingUser) {
-      Object.assign(existingUser, user);
-    } else {
-      users.push(user);
+    let user = await User.findOne({ githubId: userData.id });
+    if (!user) {
+      user = new User({
+        email: userData.email,
+        githubId: userData.id,
+        username: userData.login,
+      });
+      await user.save();
     }
 
-    const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.redirect(`/?token=${token}`);
   } catch (error) {
-    console.error('GitHub authentication error:', error);
-    res.status(500).json({ error: 'GitHub authentication failed' });
+    next(error);
   }
 });
+
+app.use(errorHandler);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

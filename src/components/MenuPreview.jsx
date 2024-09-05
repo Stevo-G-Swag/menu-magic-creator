@@ -1,40 +1,53 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-const MenuPreview = ({ title, agents, tools }) => {
+const MenuPreview = ({ title, agents, tools, onUpdate }) => {
+  const [menuItems, setMenuItems] = useState([]);
+
+  useEffect(() => {
+    const generateMenuItems = () => {
+      const items = [
+        {
+          name: 'Agent Configuration',
+          items: agents.map(agent => `Configure ${agent.name}`),
+        },
+        {
+          name: 'Core Settings',
+          items: ['API Key', 'Model Selection', 'Temperature'],
+        },
+        {
+          name: 'Advanced Settings',
+          items: ['Prompt Engineering', 'Context Window', 'Token Limit'],
+        },
+        {
+          name: 'Tool Configuration',
+          items: tools.map(tool => `Configure ${tool.name}`),
+        },
+      ];
+      setMenuItems(items);
+      onUpdate(items);
+    };
+
+    generateMenuItems();
+  }, [title, agents, tools, onUpdate]);
+
   return (
     <Card className="w-full">
       <CardHeader>
         <CardTitle>{title || 'Menu Title'}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="mb-4">
-          <h3 className="font-semibold mb-2">Agents:</h3>
-          <div className="space-y-2">
-            {agents.map((agent, index) => (
-              <div key={index} className="flex items-center space-x-2">
-                <Badge variant="secondary">{agent.name}</Badge>
-                {agent.description && (
-                  <span className="text-sm text-gray-500">{agent.description}</span>
-                )}
-              </div>
-            ))}
+        {menuItems.map((category, index) => (
+          <div key={index} className="mb-4">
+            <h3 className="font-semibold mb-2">{category.name}:</h3>
+            <div className="space-y-2">
+              {category.items.map((item, itemIndex) => (
+                <Badge key={itemIndex} variant="outline">{item}</Badge>
+              ))}
+            </div>
           </div>
-        </div>
-        <div>
-          <h3 className="font-semibold mb-2">Tools:</h3>
-          <div className="space-y-2">
-            {tools.map((tool, index) => (
-              <div key={index} className="flex items-center space-x-2">
-                <Badge variant="outline">{tool.name}</Badge>
-                {tool.description && (
-                  <span className="text-sm text-gray-500">{tool.description}</span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+        ))}
       </CardContent>
     </Card>
   );
