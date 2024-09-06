@@ -12,7 +12,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 
 const fetchInitialData = async () => {
-  // Simulating an API call
   await new Promise(resolve => setTimeout(resolve, 1000));
   return { /* Initial data structure */ };
 };
@@ -42,7 +41,7 @@ const CreateMenu = () => {
   });
 
   useEffect(() => {
-    if (location.state && location.state.template) {
+    if (location.state?.template) {
       setMenuSpecification(location.state.template);
     }
   }, [location]);
@@ -67,21 +66,9 @@ const CreateMenu = () => {
     };
   }, [provider, apiKey]);
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return <ErrorLogger error={error} />;
-  }
-
-  if (!apiKey) {
-    return <ApiKeyInput onApiKeySubmit={handleApiKeySubmit} />;
-  }
+  if (isLoading) return <Loader2 className="h-8 w-8 animate-spin mx-auto mt-8" />;
+  if (error) return <ErrorLogger error={error} />;
+  if (!apiKey) return <ApiKeyInput onApiKeySubmit={handleApiKeySubmit} />;
 
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
@@ -99,7 +86,7 @@ const CreateMenu = () => {
               <TabsTrigger value="generate" disabled={!menuSpecification}>Generate Menu</TabsTrigger>
             </TabsList>
             <TabsContent value="specify">
-              <Suspense fallback={<Loader2 className="h-8 w-8 animate-spin" />}>
+              <Suspense fallback={<Loader2 className="h-8 w-8 animate-spin mx-auto" />}>
                 <Card className="p-6">
                   <h2 className="text-2xl font-semibold mb-4">Menu Specification</h2>
                   <MenuSpecificationForm onSubmit={handleSpecificationSubmit} initialData={initialData} />
@@ -107,7 +94,7 @@ const CreateMenu = () => {
               </Suspense>
             </TabsContent>
             <TabsContent value="generate">
-              <Suspense fallback={<Loader2 className="h-8 w-8 animate-spin" />}>
+              <Suspense fallback={<Loader2 className="h-8 w-8 animate-spin mx-auto" />}>
                 <Card className="p-6">
                   <h2 className="text-2xl font-semibold mb-4">Generate Menu</h2>
                   {menuSpecification && (
