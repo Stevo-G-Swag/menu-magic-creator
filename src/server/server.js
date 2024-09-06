@@ -128,7 +128,7 @@ app.post('/api/scan-for-errors', async (req, res) => {
     res.json(analysis);
   } catch (error) {
     console.error('Error analyzing errors:', error);
-    res.status(500).json({ message: 'Failed to analyze errors' });
+    res.status(500).json({ message: 'Failed to analyze errors', error: isDevelopment ? error.message : 'Internal server error' });
   }
 });
 
@@ -163,7 +163,77 @@ app.post('/api/generate-menu', authMiddleware, async (req, res) => {
     res.json({ menu: menuItems, sandboxUrl });
   } catch (error) {
     console.error('Error generating menu:', error);
-    res.status(500).json({ message: 'Failed to generate menu' });
+    res.status(500).json({ message: 'Failed to generate menu', error: isDevelopment ? error.message : 'Internal server error' });
+  }
+});
+
+app.post('/api/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: 'User not found' });
+    }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.json({ token, user: { id: user._id, email: user.email, username: user.username } });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Error logging in', error: isDevelopment ? error.message : 'Internal server error' });
+  }
+});
+
+app.post('/api/signup', async (req, res) => {
+  try {
+    const { email, password, username } = req.body;
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = new User({ email, password: hashedPassword, username });
+    await user.save();
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.status(201).json({ token, user: { id: user._id, email: user.email, username: user.username } });
+  } catch (error) {
+    console.error('Signup error:', error);
+    res.status(500).json({ message: 'Error signing up', error: isDevelopment ? error.message : 'Internal server error' });
+  }
+});
+
+app.get('/api/user/settings', authMiddleware, async (req, res) => {
+  try {
+    const settings = await Setting.findOne({ user: req.user._id });
+    if (!settings) {
+      return res.status(404).json({ message: 'Settings not found' });
+    }
+    res.json(settings);
+  } catch (error) {
+    console.error('Error fetching user settings:', error);
+    res.status(500).json({ message: 'Error fetching settings', error: isDevelopment ? error.message : 'Internal server error' });
+  }
+});
+
+app.post('/api/user/settings', authMiddleware, async (req, res) => {
+  try {
+    const { openaiApiKey, githubClientId, githubClientSecret, litellmApiKey, openrouterApiKey } = req.body;
+    let settings = await Setting.findOne({ user: req.user._id });
+    if (!settings) {
+      settings = new Setting({ user: req.user._id });
+    }
+    settings.openaiApiKey = openaiApiKey;
+    settings.githubClientId = githubClientId;
+    settings.githubClientSecret = githubClientSecret;
+    settings.litellmApiKey = litellmApiKey;
+    settings.openrouterApiKey = openrouterApiKey;
+    await settings.save();
+    res.json({ message: 'Settings updated successfully' });
+  } catch (error) {
+    console.error('Error updating user settings:', error);
+    res.status(500).json({ message: 'Error updating settings', error: isDevelopment ? error.message : 'Internal server error' });
   }
 });
 
