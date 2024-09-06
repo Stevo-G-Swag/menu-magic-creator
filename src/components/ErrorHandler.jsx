@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+import { Loader2 } from "lucide-react"; // Import Loader2 icon from lucide-react
 
 const ErrorHandler = () => {
   const [errorDetails, setErrorDetails] = useState(null);
@@ -41,7 +41,7 @@ const ErrorHandler = () => {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <Spinner size="lg" />
+        <Loader2 className="h-8 w-8 animate-spin" /> {/* Use Loader2 icon as a spinner */}
       </div>
     );
   }
