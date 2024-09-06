@@ -23,6 +23,7 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3001;
+const isDevelopment = process.env.NODE_ENV !== 'production';
 
 mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('Connected to MongoDB'))
@@ -31,10 +32,17 @@ mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTop
 app.use(express.json());
 app.use(passport.initialize());
 
+if (isDevelopment) {
+  app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+  });
+}
+
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: "/auth/google/callback"
+  callbackURL: isDevelopment ? "http://localhost:3001/auth/google/callback" : "https://yourdomain.com/auth/google/callback"
 }, async (accessToken, refreshToken, profile, done) => {
   try {
     let user = await User.findOne({ googleId: profile.id });
@@ -55,7 +63,7 @@ passport.use(new GoogleStrategy({
 passport.use(new AppleStrategy({
   clientID: process.env.APPLE_CLIENT_ID,
   teamID: process.env.APPLE_TEAM_ID,
-  callbackURL: "/auth/apple/callback",
+  callbackURL: isDevelopment ? "http://localhost:3001/auth/apple/callback" : "https://yourdomain.com/auth/apple/callback",
   keyID: process.env.APPLE_KEY_ID,
   privateKeyLocation: process.env.APPLE_PRIVATE_KEY_LOCATION,
 }, async (accessToken, refreshToken, idToken, profile, done) => {
@@ -118,6 +126,18 @@ app.post('/api/scan-for-errors', async (req, res) => {
 
 app.use(errorHandler);
 
+if (isDevelopment) {
+  app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send('Something broke in development!');
+  });
+} else {
+  app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send('Something went wrong!');
+  });
+}
+
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  console.log(`Server is running on port ${port} in ${isDevelopment ? 'development' : 'production'} mode`);
 });

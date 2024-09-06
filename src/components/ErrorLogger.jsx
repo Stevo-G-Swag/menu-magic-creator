@@ -5,9 +5,10 @@ import CryptoJS from 'crypto-js';
 const ErrorLogger = ({ children }) => {
   const [errors, setErrors] = useState([]);
   const { toast } = useToast();
+  const isDevelopment = process.env.NODE_ENV !== 'production';
 
   const unhashApiKey = (hashedKey) => {
-    const secretPassphrase = "your-secret-passphrase";
+    const secretPassphrase = process.env.REACT_APP_API_KEY_SECRET || "default-secret-passphrase";
     return CryptoJS.AES.decrypt(hashedKey, secretPassphrase).toString(CryptoJS.enc.Utf8);
   };
 
@@ -25,8 +26,10 @@ const ErrorLogger = ({ children }) => {
     window.addEventListener('error', handleError);
 
     const intervalId = setInterval(async () => {
+      if (errors.length === 0) return;
+
       try {
-        const hashedApiKey = "U2FsdGVkX1+1234567890abcdefghijklmnopqrstuvwxyz=";
+        const hashedApiKey = process.env.REACT_APP_HASHED_API_KEY || "U2FsdGVkX1+1234567890abcdefghijklmnopqrstuvwxyz=";
         const unhashedApiKey = unhashApiKey(hashedApiKey);
 
         const response = await fetch('/api/scan-for-errors', {
@@ -38,33 +41,34 @@ const ErrorLogger = ({ children }) => {
           body: JSON.stringify({ errors }),
         });
         const data = await response.json();
-        if (data.newErrors.length > 0) {
+        if (data.newErrors && data.newErrors.length > 0) {
           data.newErrors.forEach(error => {
             toast({
-              title: "New Error Detected",
-              description: error.message,
+              title: isDevelopment ? "New Error Detected (Dev Mode)" : "An issue occurred",
+              description: isDevelopment ? error.message : "We're working on it.",
               variant: "destructive",
             });
           });
         }
+        setErrors([]);
       } catch (error) {
         console.error('Error scanning for errors:', error);
       }
-    }, 30000);
+    }, isDevelopment ? 10000 : 30000);
 
     return () => {
       console.error = originalConsoleError;
       window.removeEventListener('error', handleError);
       clearInterval(intervalId);
     };
-  }, []);
+  }, [toast, errors]);
 
   return (
     <div>
       {children}
-      {errors.length > 0 && (
+      {isDevelopment && errors.length > 0 && (
         <div className="fixed bottom-0 right-0 m-4 p-4 bg-red-100 border border-red-400 rounded max-w-md max-h-64 overflow-auto">
-          <h3 className="text-lg font-semibold text-red-800 mb-2">Error Log:</h3>
+          <h3 className="text-lg font-semibold text-red-800 mb-2">Error Log (Dev Mode):</h3>
           {errors.map((error, index) => (
             <div key={index} className="mb-2 text-sm text-red-600">
               <p><strong>Timestamp:</strong> {error.timestamp.toLocaleString()}</p>
