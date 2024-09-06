@@ -6,9 +6,8 @@ const ErrorLogger = ({ children }) => {
   const [errors, setErrors] = useState([]);
   const { toast } = useToast();
 
-  // Function to unhash the API key
   const unhashApiKey = (hashedKey) => {
-    const secretPassphrase = "your-secret-passphrase"; // This should be stored securely, not hardcoded
+    const secretPassphrase = "your-secret-passphrase";
     return CryptoJS.AES.decrypt(hashedKey, secretPassphrase).toString(CryptoJS.enc.Utf8);
   };
 
@@ -27,7 +26,7 @@ const ErrorLogger = ({ children }) => {
 
     const intervalId = setInterval(async () => {
       try {
-        const hashedApiKey = "U2FsdGVkX1+1234567890abcdefghijklmnopqrstuvwxyz="; // Replace with your actual hashed API key
+        const hashedApiKey = "U2FsdGVkX1+1234567890abcdefghijklmnopqrstuvwxyz=";
         const unhashedApiKey = unhashApiKey(hashedApiKey);
 
         const response = await fetch('/api/scan-for-errors', {

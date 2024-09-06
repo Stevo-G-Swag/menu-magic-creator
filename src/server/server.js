@@ -31,7 +31,6 @@ mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTop
 app.use(express.json());
 app.use(passport.initialize());
 
-// Passport configuration for Google OAuth
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
@@ -53,7 +52,6 @@ passport.use(new GoogleStrategy({
   }
 }));
 
-// Passport configuration for Apple Sign In
 passport.use(new AppleStrategy({
   clientID: process.env.APPLE_CLIENT_ID,
   teamID: process.env.APPLE_TEAM_ID,
@@ -77,7 +75,6 @@ passport.use(new AppleStrategy({
   }
 }));
 
-// Function to unhash the API key
 const unhashApiKey = (hashedKey) => {
   const secretPassphrase = process.env.API_KEY_SECRET;
   return CryptoJS.AES.decrypt(hashedKey, secretPassphrase).toString(CryptoJS.enc.Utf8);
