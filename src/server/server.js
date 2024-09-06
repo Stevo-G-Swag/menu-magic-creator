@@ -39,10 +39,18 @@ if (isDevelopment) {
   });
 }
 
+const googleCallbackURL = isDevelopment
+  ? "http://localhost:3001/auth/google/callback"
+  : "https://yourdomain.com/auth/google/callback";
+
+const appleCallbackURL = isDevelopment
+  ? "http://localhost:3001/auth/apple/callback"
+  : "https://yourdomain.com/auth/apple/callback";
+
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: isDevelopment ? "http://localhost:3001/auth/google/callback" : "https://yourdomain.com/auth/google/callback"
+  callbackURL: googleCallbackURL
 }, async (accessToken, refreshToken, profile, done) => {
   try {
     let user = await User.findOne({ googleId: profile.id });
@@ -63,7 +71,7 @@ passport.use(new GoogleStrategy({
 passport.use(new AppleStrategy({
   clientID: process.env.APPLE_CLIENT_ID,
   teamID: process.env.APPLE_TEAM_ID,
-  callbackURL: isDevelopment ? "http://localhost:3001/auth/apple/callback" : "https://yourdomain.com/auth/apple/callback",
+  callbackURL: appleCallbackURL,
   keyID: process.env.APPLE_KEY_ID,
   privateKeyLocation: process.env.APPLE_PRIVATE_KEY_LOCATION,
 }, async (accessToken, refreshToken, idToken, profile, done) => {
@@ -124,17 +132,56 @@ app.post('/api/scan-for-errors', async (req, res) => {
   }
 });
 
+app.post('/api/generate-menu', authMiddleware, async (req, res) => {
+  try {
+    const { title, agents, tools, customizations, provider } = req.body;
+    let providerClient;
+
+    switch (provider) {
+      case 'openai':
+        providerClient = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
+        break;
+      case 'huggingface':
+        providerClient = new HfInference(process.env.HUGGINGFACE_API_KEY);
+        break;
+      case 'github':
+        providerClient = new Octokit({ auth: process.env.GITHUB_TOKEN });
+        break;
+      case 'litellm':
+        providerClient = new LiteLLM({ apiKey: process.env.LITELLM_API_KEY });
+        break;
+      case 'openrouter':
+        providerClient = { apiKey: process.env.OPENROUTER_API_KEY };
+        break;
+      default:
+        throw new Error('Invalid provider specified');
+    }
+
+    const menuItems = await generateModMenu(providerClient, provider, title, agents, tools, customizations);
+    const sandboxUrl = await createSandboxEnvironment(menuItems);
+
+    res.json({ menu: menuItems, sandboxUrl });
+  } catch (error) {
+    console.error('Error generating menu:', error);
+    res.status(500).json({ message: 'Failed to generate menu' });
+  }
+});
+
 app.use(errorHandler);
 
 if (isDevelopment) {
   app.use((err, req, res, next) => {
     console.error(err.stack);
-    res.status(500).send('Something broke in development!');
+    res.status(500).json({
+      message: 'Something broke in development!',
+      error: err.message,
+      stack: err.stack
+    });
   });
 } else {
   app.use((err, req, res, next) => {
     console.error(err.stack);
-    res.status(500).send('Something went wrong!');
+    res.status(500).json({ message: 'Something went wrong!' });
   });
 }
 
