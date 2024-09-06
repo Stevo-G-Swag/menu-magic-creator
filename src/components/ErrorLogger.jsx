@@ -1,9 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useToast } from "@/components/ui/use-toast";
+import CryptoJS from 'crypto-js';
 
 const ErrorLogger = ({ children }) => {
   const [errors, setErrors] = useState([]);
   const { toast } = useToast();
+
+  // Function to unhash the API key
+  const unhashApiKey = (hashedKey) => {
+    const secretPassphrase = "your-secret-passphrase"; // This should be stored securely, not hardcoded
+    return CryptoJS.AES.decrypt(hashedKey, secretPassphrase).toString(CryptoJS.enc.Utf8);
+  };
 
   useEffect(() => {
     const originalConsoleError = console.error;
@@ -20,10 +27,14 @@ const ErrorLogger = ({ children }) => {
 
     const intervalId = setInterval(async () => {
       try {
+        const hashedApiKey = "U2FsdGVkX1+1234567890abcdefghijklmnopqrstuvwxyz="; // Replace with your actual hashed API key
+        const unhashedApiKey = unhashApiKey(hashedApiKey);
+
         const response = await fetch('/api/scan-for-errors', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'X-API-Key': unhashedApiKey,
           },
           body: JSON.stringify({ errors }),
         });

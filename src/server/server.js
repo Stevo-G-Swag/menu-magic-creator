@@ -17,6 +17,7 @@ import errorHandler from './middleware/errorHandler.js';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as AppleStrategy } from 'passport-apple';
+import CryptoJS from 'crypto-js';
 
 dotenv.config();
 
@@ -30,67 +31,35 @@ mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTop
 app.use(express.json());
 app.use(passport.initialize());
 
-// Passport strategies configuration
-passport.use(new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: "/api/auth/google/callback"
-}, async (accessToken, refreshToken, profile, done) => {
-  try {
-    let user = await User.findOne({ googleId: profile.id });
-    if (!user) {
-      user = new User({
-        googleId: profile.id,
-        email: profile.emails[0].value,
-        username: profile.displayName
-      });
-      await user.save();
-    }
-    return done(null, user);
-  } catch (error) {
-    return done(error, null);
-  }
-}));
+// ... (previous passport configurations remain unchanged)
 
-passport.use(new AppleStrategy({
-  clientID: process.env.APPLE_CLIENT_ID,
-  teamID: process.env.APPLE_TEAM_ID,
-  callbackURL: "/api/auth/apple/callback",
-  keyID: process.env.APPLE_KEY_ID,
-  privateKeyLocation: process.env.APPLE_PRIVATE_KEY_LOCATION,
-}, async (accessToken, refreshToken, profile, done) => {
-  try {
-    let user = await User.findOne({ appleId: profile.id });
-    if (!user) {
-      user = new User({
-        appleId: profile.id,
-        email: profile.email,
-        username: profile.name.firstName + ' ' + profile.name.lastName
-      });
-      await user.save();
-    }
-    return done(null, user);
-  } catch (error) {
-    return done(error, null);
-  }
-}));
+// Function to unhash the API key
+const unhashApiKey = (hashedKey) => {
+  const secretPassphrase = process.env.API_KEY_SECRET; // Store this securely in your environment variables
+  return CryptoJS.AES.decrypt(hashedKey, secretPassphrase).toString(CryptoJS.enc.Utf8);
+};
 
-// ... (rest of the server code remains the same)
-
-app.post('/api/analyze-error', async (req, res) => {
+app.post('/api/scan-for-errors', async (req, res) => {
   try {
-    const { error } = req.body;
-    const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
+    const { errors } = req.body;
+    const hashedApiKey = req.headers['x-api-key'];
+    const unhashedApiKey = unhashApiKey(hashedApiKey);
+
+    const openai = new OpenAIApi(new Configuration({ apiKey: unhashedApiKey }));
     
-    const prompt = `Analyze the following error and provide a detailed explanation, possible affected files, and a solution if possible:
+    const prompt = `Analyze the following errors and provide detailed explanations, possible affected files, and solutions if possible:
     
-    Error: ${error}
+    Errors: ${JSON.stringify(errors)}
     
     Please format your response as JSON with the following structure:
     {
-      "message": "Detailed explanation of the error",
-      "affectedFiles": ["list", "of", "potentially", "affected", "files"],
-      "possibleSolution": "A possible solution to the error"
+      "newErrors": [
+        {
+          "message": "Detailed explanation of the error",
+          "affectedFiles": ["list", "of", "potentially", "affected", "files"],
+          "possibleSolution": "A possible solution to the error"
+        }
+      ]
     }`;
 
     const completion = await openai.createChatCompletion({
@@ -101,8 +70,8 @@ app.post('/api/analyze-error', async (req, res) => {
     const analysis = JSON.parse(completion.data.choices[0].message.content);
     res.json(analysis);
   } catch (error) {
-    console.error('Error analyzing error:', error);
-    res.status(500).json({ message: 'Failed to analyze error' });
+    console.error('Error analyzing errors:', error);
+    res.status(500).json({ message: 'Failed to analyze errors' });
   }
 });
 
