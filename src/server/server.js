@@ -31,11 +31,55 @@ mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTop
 app.use(express.json());
 app.use(passport.initialize());
 
-// ... (previous passport configurations remain unchanged)
+// Passport configuration for Google OAuth
+passport.use(new GoogleStrategy({
+  clientID: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  callbackURL: "/auth/google/callback"
+}, async (accessToken, refreshToken, profile, done) => {
+  try {
+    let user = await User.findOne({ googleId: profile.id });
+    if (!user) {
+      user = new User({
+        googleId: profile.id,
+        email: profile.emails[0].value,
+        username: profile.displayName
+      });
+      await user.save();
+    }
+    return done(null, user);
+  } catch (error) {
+    return done(error, null);
+  }
+}));
+
+// Passport configuration for Apple Sign In
+passport.use(new AppleStrategy({
+  clientID: process.env.APPLE_CLIENT_ID,
+  teamID: process.env.APPLE_TEAM_ID,
+  callbackURL: "/auth/apple/callback",
+  keyID: process.env.APPLE_KEY_ID,
+  privateKeyLocation: process.env.APPLE_PRIVATE_KEY_LOCATION,
+}, async (accessToken, refreshToken, idToken, profile, done) => {
+  try {
+    let user = await User.findOne({ appleId: profile.id });
+    if (!user) {
+      user = new User({
+        appleId: profile.id,
+        email: profile.email,
+        username: profile.name.firstName + ' ' + profile.name.lastName
+      });
+      await user.save();
+    }
+    return done(null, user);
+  } catch (error) {
+    return done(error, null);
+  }
+}));
 
 // Function to unhash the API key
 const unhashApiKey = (hashedKey) => {
-  const secretPassphrase = process.env.API_KEY_SECRET; // Store this securely in your environment variables
+  const secretPassphrase = process.env.API_KEY_SECRET;
   return CryptoJS.AES.decrypt(hashedKey, secretPassphrase).toString(CryptoJS.enc.Utf8);
 };
 
