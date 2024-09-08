@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import MenuGenerator from '../components/MenuGenerator';
 import MenuSpecificationForm from '../components/MenuSpecificationForm';
 import GuidedTour from '../components/GuidedTour';
@@ -14,6 +14,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const fetchInitialData = async () => {
+  // Simulating API call
   await new Promise(resolve => setTimeout(resolve, 1000));
   return { /* Initial data structure */ };
 };
@@ -74,80 +75,83 @@ const CreateMenu = () => {
     };
   }, [provider, apiKey]);
 
-  if (isLoading) return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="flex justify-center items-center h-screen"
-    >
-      <Loader2 className="h-12 w-12 animate-spin text-primary" />
-    </motion.div>
-  );
-  
-  if (error) return <ErrorLogger error={error} />;
   if (!apiKey) return <ApiKeyInput onApiKeySubmit={handleApiKeySubmit} />;
 
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <ErrorLogger>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
-        >
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
-            <motion.h1
-              initial={{ x: -20 }}
-              animate={{ x: 0 }}
-              className="text-4xl font-bold text-primary"
+        <AnimatePresence>
+          {isLoading ? (
+            <motion.div
+              key="loader"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex justify-center items-center h-screen"
             >
-              Create OLLAMA Menu
-            </motion.h1>
-            <GuidedTour />
-          </div>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="text-gray-600 mb-8"
-          >
-            Use this advanced interface to create your custom OLLAMA mode menu with AI-powered agents and selectable tools.
-          </motion.p>
-          
-          <Tabs defaultValue="specify" className="space-y-8">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="specify">Specify Menu</TabsTrigger>
-              <TabsTrigger value="generate" disabled={!menuSpecification}>Generate Menu</TabsTrigger>
-            </TabsList>
-            <TabsContent value="specify">
-              <Suspense fallback={<Loader2 className="h-8 w-8 animate-spin mx-auto" />}>
-                <Card className="p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                  <h2 className="text-2xl font-semibold mb-4 text-primary">Menu Specification</h2>
-                  <MenuSpecificationForm onSubmit={handleSpecificationSubmit} initialData={initialData} />
-                </Card>
-              </Suspense>
-            </TabsContent>
-            <TabsContent value="generate">
-              <Suspense fallback={<Loader2 className="h-8 w-8 animate-spin mx-auto" />}>
-                <Card className="p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                  <h2 className="text-2xl font-semibold mb-4 text-primary">Generate Menu</h2>
-                  {menuSpecification && (
-                    <MenuGenerator
-                      title={menuSpecification.title}
-                      agents={menuSpecification.agents}
-                      tools={menuSpecification.tools}
-                      customizations={menuSpecification.customizations}
-                      provider={provider}
-                      apiKey={apiKey}
-                    />
-                  )}
-                </Card>
-              </Suspense>
-            </TabsContent>
-          </Tabs>
-        </motion.div>
+              <Loader2 className="h-16 w-16 animate-spin text-primary" />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="content"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+            >
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
+                <motion.h1
+                  initial={{ x: -20 }}
+                  animate={{ x: 0 }}
+                  className="text-4xl font-bold text-primary"
+                >
+                  Create OLLAMA Menu
+                </motion.h1>
+                <GuidedTour />
+              </div>
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                className="text-gray-600 mb-8"
+              >
+                Use this advanced interface to create your custom OLLAMA mode menu with AI-powered agents and selectable tools.
+              </motion.p>
+              
+              <Tabs defaultValue="specify" className="space-y-8">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="specify">Specify Menu</TabsTrigger>
+                  <TabsTrigger value="generate" disabled={!menuSpecification}>Generate Menu</TabsTrigger>
+                </TabsList>
+                <TabsContent value="specify">
+                  <Suspense fallback={<Loader2 className="h-8 w-8 animate-spin mx-auto" />}>
+                    <Card className="p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                      <h2 className="text-2xl font-semibold mb-4 text-primary">Menu Specification</h2>
+                      <MenuSpecificationForm onSubmit={handleSpecificationSubmit} initialData={initialData} />
+                    </Card>
+                  </Suspense>
+                </TabsContent>
+                <TabsContent value="generate">
+                  <Suspense fallback={<Loader2 className="h-8 w-8 animate-spin mx-auto" />}>
+                    <Card className="p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                      <h2 className="text-2xl font-semibold mb-4 text-primary">Generate Menu</h2>
+                      {menuSpecification && (
+                        <MenuGenerator
+                          title={menuSpecification.title}
+                          agents={menuSpecification.agents}
+                          tools={menuSpecification.tools}
+                          customizations={menuSpecification.customizations}
+                          provider={provider}
+                          apiKey={apiKey}
+                        />
+                      )}
+                    </Card>
+                  </Suspense>
+                </TabsContent>
+              </Tabs>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </ErrorLogger>
     </ErrorBoundary>
   );
