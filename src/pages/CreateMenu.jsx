@@ -61,18 +61,7 @@ const CreateMenu = () => {
   const handleApiKeySubmit = useCallback((selectedProvider, key) => {
     setProvider(selectedProvider);
     setApiKey(key);
-    if (key !== 'free') {
-      localStorage.setItem(`${selectedProvider.toUpperCase()}_API_KEY`, key);
-    }
   }, []);
-
-  useEffect(() => {
-    return () => {
-      if (provider && apiKey !== 'free') {
-        localStorage.removeItem(`${provider.toUpperCase()}_API_KEY`);
-      }
-    };
-  }, [provider, apiKey]);
 
   const renderContent = () => {
     if (!apiKey) {
