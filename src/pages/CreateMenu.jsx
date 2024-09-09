@@ -8,10 +8,13 @@ import MenuSpecificationForm from '../components/MenuSpecificationForm';
 import GuidedTour from '../components/GuidedTour';
 import ApiKeyInput from '../components/ApiKeyInput';
 import ErrorLogger from '../components/ErrorLogger';
+import SettingsModal from '../components/SettingsModal';
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2 } from "lucide-react";
+import { Loader2, Settings, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const fetchInitialData = async () => {
   // Simulating API call
@@ -41,7 +44,10 @@ const CreateMenu = () => {
   const [menuSpecification, setMenuSpecification] = useState(null);
   const [apiKey, setApiKey] = useState(null);
   const [provider, setProvider] = useState(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [showAIHelper, setShowAIHelper] = useState(false);
   const location = useLocation();
+  const { toast } = useToast();
 
   const { data: initialData, isLoading, error } = useQuery({
     queryKey: ['initialData'],
@@ -63,6 +69,19 @@ const CreateMenu = () => {
     setApiKey(key);
   }, []);
 
+  const handleSettingsUpdate = useCallback((newSettings) => {
+    // Update settings in localStorage or context
+    localStorage.setItem('userSettings', JSON.stringify(newSettings));
+    toast({
+      title: "Settings Updated",
+      description: "Your settings have been saved successfully.",
+    });
+  }, [toast]);
+
+  const toggleAIHelper = () => {
+    setShowAIHelper(!showAIHelper);
+  };
+
   const renderContent = () => {
     if (!apiKey) {
       return <ApiKeyInput onApiKeySubmit={handleApiKeySubmit} />;
@@ -83,7 +102,33 @@ const CreateMenu = () => {
           >
             Create OLLAMA Menu
           </motion.h1>
-          <GuidedTour />
+          <div className="flex space-x-4">
+            <GuidedTour />
+            <Button onClick={() => setIsSettingsOpen(true)} variant="outline">
+              <Settings className="mr-2 h-4 w-4" />
+              Settings
+            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  Help
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Need Assistance?</DialogTitle>
+                  <DialogDescription>
+                    Our AI helper can guide you through the menu creation process. Would you like to enable the AI assistant?
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => {}}>No, thanks</Button>
+                  <Button onClick={toggleAIHelper}>Yes, enable AI helper</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
         <motion.p
           initial={{ opacity: 0 }}
@@ -103,7 +148,7 @@ const CreateMenu = () => {
             <Suspense fallback={<Loader2 className="h-8 w-8 animate-spin mx-auto" />}>
               <Card className="p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
                 <h2 className="text-2xl font-semibold mb-4 text-primary">Menu Specification</h2>
-                <MenuSpecificationForm onSubmit={handleSpecificationSubmit} initialData={initialData} />
+                <MenuSpecificationForm onSubmit={handleSpecificationSubmit} initialData={initialData} showAIHelper={showAIHelper} />
               </Card>
             </Suspense>
           </TabsContent>
@@ -119,6 +164,7 @@ const CreateMenu = () => {
                     customizations={menuSpecification.customizations}
                     provider={provider}
                     apiKey={apiKey}
+                    showAIHelper={showAIHelper}
                   />
                 )}
               </Card>
@@ -154,6 +200,7 @@ const CreateMenu = () => {
             </motion.div>
           )}
         </AnimatePresence>
+        <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} onUpdate={handleSettingsUpdate} />
       </ErrorLogger>
     </ErrorBoundary>
   );
