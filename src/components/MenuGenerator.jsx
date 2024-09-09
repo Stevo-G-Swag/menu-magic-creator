@@ -4,7 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
-const MenuGenerator = ({ title, agents, tools, customizations, apiKey }) => {
+const MenuGenerator = ({ title, agents, tools, customizations, provider, apiKey }) => {
   const [generatedMenu, setGeneratedMenu] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -20,7 +20,7 @@ const MenuGenerator = ({ title, agents, tools, customizations, apiKey }) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`
         },
-        body: JSON.stringify({ title, agents, tools, customizations }),
+        body: JSON.stringify({ title, agents, tools, customizations, provider }),
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -41,6 +41,7 @@ const MenuGenerator = ({ title, agents, tools, customizations, apiKey }) => {
       // Simulate real-time updates
       const interval = setInterval(() => {
         setGeneratedMenu(prevMenu => {
+          if (!prevMenu) return null;
           const updatedMenu = [...prevMenu];
           const randomIndex = Math.floor(Math.random() * updatedMenu.length);
           updatedMenu[randomIndex] = `${updatedMenu[randomIndex]} (Updated)`;

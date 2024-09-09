@@ -5,10 +5,10 @@ import CryptoJS from 'crypto-js';
 const ErrorLogger = ({ children }) => {
   const [errors, setErrors] = useState([]);
   const { toast } = useToast();
-  const isDevelopment = process.env.NODE_ENV !== 'production';
+  const isDevelopment = import.meta.env.MODE === 'development';
 
   const unhashApiKey = (hashedKey) => {
-    const secretPassphrase = process.env.REACT_APP_API_KEY_SECRET || "default-secret-passphrase";
+    const secretPassphrase = import.meta.env.VITE_API_KEY_SECRET || "default-secret-passphrase";
     return CryptoJS.AES.decrypt(hashedKey, secretPassphrase).toString(CryptoJS.enc.Utf8);
   };
 
@@ -29,7 +29,7 @@ const ErrorLogger = ({ children }) => {
       if (errors.length === 0) return;
 
       try {
-        const hashedApiKey = process.env.REACT_APP_HASHED_API_KEY || "U2FsdGVkX1+1234567890abcdefghijklmnopqrstuvwxyz=";
+        const hashedApiKey = import.meta.env.VITE_HASHED_API_KEY || "U2FsdGVkX1+1234567890abcdefghijklmnopqrstuvwxyz=";
         const unhashedApiKey = unhashApiKey(hashedApiKey);
 
         const response = await fetch('/api/scan-for-errors', {
