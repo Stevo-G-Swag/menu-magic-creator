@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import CreateMenu from "./pages/CreateMenu";
 import Templates from "./pages/Templates";
 import ErrorHandler from "./components/ErrorHandler";
+import Auth from "./components/Auth";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,8 @@ const App = () => (
               <Route path="/create" element={<CreateMenu />} />
               <Route path="/templates" element={<Templates />} />
               <Route path="/error" element={<ErrorHandler />} />
+              <Route path="/login" element={<Auth isLogin={true} />} />
+              <Route path="/signup" element={<Auth isLogin={false} />} />
             </Routes>
           </main>
           <Footer />

@@ -1,8 +1,17 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 
 const Header = () => {
+  const navigate = useNavigate();
+  const isLoggedIn = !!localStorage.getItem('token');
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
+
   return (
     <header className="bg-white shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -15,7 +24,14 @@ const Header = () => {
               <li><Link to="/dashboard" className="text-gray-600 hover:text-gray-900">Dashboard</Link></li>
               <li><Link to="/create" className="text-gray-600 hover:text-gray-900">Create Menu</Link></li>
               <li><Link to="/templates" className="text-gray-600 hover:text-gray-900">Templates</Link></li>
-              <li><Button variant="outline">Sign In</Button></li>
+              {isLoggedIn ? (
+                <li><Button onClick={handleLogout} variant="outline">Logout</Button></li>
+              ) : (
+                <>
+                  <li><Button onClick={() => navigate('/login')} variant="outline">Login</Button></li>
+                  <li><Button onClick={() => navigate('/signup')} variant="outline">Sign Up</Button></li>
+                </>
+              )}
             </ul>
           </nav>
         </div>
