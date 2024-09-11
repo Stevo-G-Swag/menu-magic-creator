@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
 
-export async function generateModMenu(providerClient, provider, title, agents, tools, customizations) {
+export async function generateModMenu(providerClient, provider, model, title, agents, tools, customizations) {
   const prompt = `
     Create a minimalist mod menu for an agentic AI LLM system with the following specifications:
     Title: ${title}
@@ -24,7 +24,7 @@ export async function generateModMenu(providerClient, provider, title, agents, t
     switch (provider) {
       case 'openai':
         const response = await providerClient.createChatCompletion({
-          model: "gpt-4",
+          model: model,
           messages: [
             { role: "system", content: "You are a skilled AI assistant specializing in creating mod menus for AI systems." },
             { role: "user", content: prompt }
@@ -36,7 +36,7 @@ export async function generateModMenu(providerClient, provider, title, agents, t
         break;
       case 'huggingface':
         const hfResponse = await providerClient.textGeneration({
-          model: 'gpt2',
+          model: model,
           inputs: prompt,
           parameters: {
             max_new_tokens: 2000,
@@ -60,6 +60,7 @@ export async function generateModMenu(providerClient, provider, title, agents, t
             { role: "system", content: "You are a skilled AI assistant specializing in creating mod menus for AI systems." },
             { role: "user", content: prompt }
           ],
+          model: model,
           max_tokens: 2000,
           temperature: 0.7,
         });
@@ -73,7 +74,7 @@ export async function generateModMenu(providerClient, provider, title, agents, t
             'Authorization': `Bearer ${providerClient.apiKey}`,
           },
           body: JSON.stringify({
-            model: 'openai/gpt-3.5-turbo',
+            model: model,
             messages: [
               { role: "system", content: "You are a skilled AI assistant specializing in creating mod menus for AI systems." },
               { role: "user", content: prompt }
@@ -85,6 +86,8 @@ export async function generateModMenu(providerClient, provider, title, agents, t
         const openRouterData = await openRouterResponse.json();
         menuItems = JSON.parse(openRouterData.choices[0].message.content);
         break;
+      default:
+        throw new Error('Invalid provider specified');
     }
     return menuItems;
   } catch (error) {
@@ -106,21 +109,20 @@ export async function createSandboxEnvironment(menuItems) {
     import React from 'react';
     import ReactDOM from 'react-dom';
 
-    const ModMenu = ({ menuItems }) => (
+    const ModMenu = ({ menuItems }) =>
       <div style={{ backgroundColor: 'red', color: 'white', padding: '20px' }}>
-        <h1>${menuItems[0].title}</h1>
-        {menuItems.map((category, index) => (
+        <h1>{menuItems[0].title}</h1>
+        {menuItems.map((category, index) =>
           <div key={index}>
             <h2>{category.name}</h2>
             <ul>
-              {category.items.map((item, itemIndex) => (
+              {category.items.map((item, itemIndex) =>
                 <li key={itemIndex}>{item}</li>
-              ))}
+              )}
             </ul>
           </div>
-        ))}
-      </div>
-    );
+        )}
+      </div>;
 
     ReactDOM.render(
       <ModMenu menuItems={${JSON.stringify(menuItems)}} />,

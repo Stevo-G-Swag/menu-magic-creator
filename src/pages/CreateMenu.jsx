@@ -30,6 +30,7 @@ const CreateMenu = () => {
   const [menuSpecification, setMenuSpecification] = useState(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showAIHelper, setShowAIHelper] = useState(false);
+  const [userSettings, setUserSettings] = useState(null);
   const location = useLocation();
   const { toast } = useToast();
 
@@ -39,6 +40,12 @@ const CreateMenu = () => {
     if (location.state?.template) {
       setMenuSpecification(location.state.template);
     }
+    const savedSettings = JSON.parse(localStorage.getItem('userSettings'));
+    if (savedSettings) {
+      setUserSettings(savedSettings);
+    } else {
+      setIsSettingsOpen(true);
+    }
   }, [location]);
 
   const handleSpecificationSubmit = useCallback((specification) => {
@@ -46,6 +53,7 @@ const CreateMenu = () => {
   }, []);
 
   const handleSettingsUpdate = useCallback((newSettings) => {
+    setUserSettings(newSettings);
     localStorage.setItem('userSettings', JSON.stringify(newSettings));
     toast({ title: "Settings updated successfully" });
   }, [toast]);
@@ -53,7 +61,6 @@ const CreateMenu = () => {
   const handleAIHelperToggle = () => setShowAIHelper(!showAIHelper);
 
   const handleSuggestionApply = (suggestion) => {
-    // Logic to apply AI suggestion to the menu specification
     setMenuSpecification(prevSpec => ({ ...prevSpec, ...suggestion }));
   };
 
@@ -89,12 +96,18 @@ const CreateMenu = () => {
           </TabsContent>
           <TabsContent value="generate">
             <Card className="p-6">
-              {menuSpecification && <MenuGenerator {...menuSpecification} />}
+              {menuSpecification && userSettings && (
+                <MenuGenerator {...menuSpecification} userSettings={userSettings} />
+              )}
             </Card>
           </TabsContent>
         </Tabs>
       </div>
-      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} onUpdate={handleSettingsUpdate} />
+      <SettingsModal 
+        isOpen={isSettingsOpen} 
+        onClose={() => setIsSettingsOpen(false)} 
+        onUpdate={handleSettingsUpdate}
+      />
     </ErrorBoundary>
   );
 };

@@ -3,12 +3,18 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
-const MenuGenerator = ({ title, agents, tools, customizations, provider, apiKey }) => {
+const MenuGenerator = ({ title, agents, tools, customizations, userSettings }) => {
   const [generatedMenu, setGeneratedMenu] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [sandboxUrl, setSandboxUrl] = useState(null);
+  const [selectedProvider, setSelectedProvider] = useState(userSettings.defaultProvider);
+  const [selectedModel, setSelectedModel] = useState(userSettings.defaultModel);
+  const { toast } = useToast();
 
   const handleGenerate = async () => {
     setIsLoading(true);
@@ -18,9 +24,15 @@ const MenuGenerator = ({ title, agents, tools, customizations, provider, apiKey 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
         },
-        body: JSON.stringify({ title, agents, tools, customizations, provider }),
+        body: JSON.stringify({ 
+          title, 
+          agents, 
+          tools, 
+          customizations, 
+          provider: selectedProvider,
+          model: selectedModel,
+        }),
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -61,15 +73,17 @@ const MenuGenerator = ({ title, agents, tools, customizations, provider, apiKey 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
         },
-        body: JSON.stringify({ task: item }),
+        body: JSON.stringify({ task: item, provider: selectedProvider, model: selectedModel }),
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const result = await response.json();
-      alert(`Task completed: ${result.message}`);
+      toast({
+        title: "Task Completed",
+        description: result.message,
+      });
     } catch (error) {
       console.error('Error running task:', error);
       setError(`Failed to run task: ${error.message}`);
@@ -80,8 +94,38 @@ const MenuGenerator = ({ title, agents, tools, customizations, provider, apiKey 
 
   return (
     <div className="space-y-6">
+      <div className="flex space-x-4">
+        <Select value={selectedProvider} onValueChange={setSelectedProvider}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Select Provider" />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.keys(userSettings).filter(key => key.includes('ApiKey') || key.includes('Token')).map(key => (
+              <SelectItem key={key} value={key.replace('ApiKey', '').replace('Token', '').toLowerCase()}>
+                {key.replace('ApiKey', '').replace('Token', '')}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={selectedModel} onValueChange={setSelectedModel}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Select Model" />
+          </SelectTrigger>
+          <SelectContent>
+            {['gpt-3.5-turbo', 'gpt-4', 'claude-2', 'llama-2'].map(model => (
+              <SelectItem key={model} value={model}>{model}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      
       <Button onClick={handleGenerate} disabled={isLoading}>
-        {isLoading ? 'Generating...' : 'Generate Menu'}
+        {isLoading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Generating...
+          </>
+        ) : 'Generate Menu'}
       </Button>
       
       {error && (

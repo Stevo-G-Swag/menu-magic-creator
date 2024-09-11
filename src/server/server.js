@@ -27,7 +27,7 @@ app.use(express.json());
 
 app.post('/api/generate-menu', authMiddleware, async (req, res) => {
   try {
-    const { title, agents, tools, customizations, provider } = req.body;
+    const { title, agents, tools, customizations, provider, model } = req.body;
     let providerClient;
 
     const userSettings = await Setting.findOne({ user: req.user._id });
@@ -55,7 +55,7 @@ app.post('/api/generate-menu', authMiddleware, async (req, res) => {
         throw new Error('Invalid provider specified');
     }
 
-    const menuItems = await generateModMenu(providerClient, provider, title, agents, tools, customizations);
+    const menuItems = await generateModMenu(providerClient, provider, model, title, agents, tools, customizations);
     const sandboxUrl = await createSandboxEnvironment(menuItems);
 
     res.json({ menu: menuItems, sandboxUrl });
@@ -110,6 +110,36 @@ app.post('/api/settings', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Error updating settings:', error);
     res.status(500).json({ message: 'Failed to update settings', error: error.message });
+  }
+});
+
+app.post('/api/run-task', authMiddleware, async (req, res) => {
+  try {
+    const { task, provider, model } = req.body;
+    const userSettings = await Setting.findOne({ user: req.user._id });
+    if (!userSettings) {
+      return res.status(400).json({ message: 'User settings not found' });
+    }
+
+    let result;
+    switch (provider) {
+      case 'openai':
+        const openai = new OpenAIApi(new Configuration({ apiKey: userSettings.openaiApiKey }));
+        const completion = await openai.createChatCompletion({
+          model: model,
+          messages: [{ role: "user", content: `Execute the following task: ${task}` }],
+        });
+        result = completion.data.choices[0].message.content;
+        break;
+      // Add cases for other providers here
+      default:
+        throw new Error('Invalid provider specified');
+    }
+
+    res.json({ message: `Task completed: ${result}` });
+  } catch (error) {
+    console.error('Error running task:', error);
+    res.status(500).json({ message: 'Failed to run task', error: error.message });
   }
 });
 

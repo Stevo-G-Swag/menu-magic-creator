@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { HelpCircle } from "lucide-react";
 
 const defaultSettings = {
   openaiApiKey: '',
@@ -64,7 +66,19 @@ const SettingsModal = ({ isOpen, onClose, onUpdate }) => {
             {Object.entries(settings).map(([key, value]) => (
               key !== 'defaultProvider' && key !== 'defaultModel' ? (
                 <div key={key}>
-                  <Label htmlFor={key}>{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</Label>
+                  <Label htmlFor={key} className="flex items-center">
+                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="h-4 w-4 ml-2" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Enter your {key.replace(/([A-Z])/g, ' $1').toLowerCase()} here</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </Label>
                   <Input
                     id={key}
                     name={key}
