@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,12 @@ const Auth = ({ isLogin }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!isLogin) {
+      localStorage.setItem('hasSignedUpBefore', 'true');
+    }
+  }, [isLogin]);
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -35,11 +41,12 @@ const Auth = ({ isLogin }) => {
         const data = await response.json();
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('hasSignedUpBefore', 'true');
         toast({
           title: isLogin ? "Login Successful" : "Sign Up Successful",
           description: `Welcome ${data.user.email}!`,
         });
-        navigate('/');
+        navigate('/dashboard');
       } else {
         throw new Error(isLogin ? 'Login failed' : 'Sign up failed');
       }
@@ -57,7 +64,7 @@ const Auth = ({ isLogin }) => {
   };
 
   return (
-    <Card className="w-[350px]">
+    <Card className="w-[350px] mx-auto mt-10">
       <CardHeader>
         <CardTitle>{isLogin ? "Login" : "Sign Up"}</CardTitle>
       </CardHeader>

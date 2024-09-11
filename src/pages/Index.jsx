@@ -1,9 +1,23 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Index = () => {
+  const navigate = useNavigate();
+  const isAuthenticated = !!localStorage.getItem('token');
+  const hasSignedUpBefore = localStorage.getItem('hasSignedUpBefore') === 'true';
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    } else if (hasSignedUpBefore) {
+      navigate('/login');
+    } else {
+      navigate('/signup');
+    }
+  }, [isAuthenticated, hasSignedUpBefore, navigate]);
+
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-100 p-4">
       <Card className="w-full max-w-4xl">
@@ -19,20 +33,11 @@ const Index = () => {
           </p>
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
             <Button asChild size="lg">
-              <Link to="/create">Create Menu</Link>
+              <a href="/create">Create Menu</a>
             </Button>
             <Button variant="outline" asChild size="lg">
-              <Link to="/templates">Browse Templates</Link>
+              <a href="/templates">Browse Templates</a>
             </Button>
-          </div>
-          <div className="mt-8 text-center">
-            <h3 className="text-lg font-semibold mb-2">Getting Started</h3>
-            <ol className="list-decimal list-inside text-left">
-              <li>Choose a template or start from scratch</li>
-              <li>Customize your menu with agents and tools</li>
-              <li>Preview and generate your OLLAMA mode menu</li>
-              <li>Test your menu in our interactive sandbox</li>
-            </ol>
           </div>
         </CardContent>
       </Card>
