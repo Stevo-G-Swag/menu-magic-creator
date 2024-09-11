@@ -1,20 +1,21 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useQuery } from '@tanstack/react-query';
-import MenuGenerator from '../components/MenuGenerator';
-import MenuSpecificationForm from '../components/MenuSpecificationForm';
-import SettingsModal from '../components/SettingsModal';
-import AIHelper from '../components/AIHelper';
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 
+const MenuGenerator = React.lazy(() => import('../components/MenuGenerator'));
+const MenuSpecificationForm = React.lazy(() => import('../components/MenuSpecificationForm'));
+const SettingsModal = React.lazy(() => import('../components/SettingsModal'));
+const AIHelper = React.lazy(() => import('../components/AIHelper'));
+
 const fetchInitialData = async () => {
-  // Simulating API call
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  // Simulating API call with reduced delay
+  await new Promise(resolve => setTimeout(resolve, 500));
   return { /* Initial data structure */ };
 };
 
@@ -34,7 +35,10 @@ const CreateMenu = () => {
   const location = useLocation();
   const { toast } = useToast();
 
-  const { data: initialData, isLoading, error } = useQuery(['initialData'], fetchInitialData);
+  const { data: initialData, isLoading, error } = useQuery(['initialData'], fetchInitialData, {
+    staleTime: 60000, // Cache for 1 minute
+    retry: 2, // Retry twice before showing error
+  });
 
   useEffect(() => {
     if (location.state?.template) {
@@ -60,9 +64,9 @@ const CreateMenu = () => {
 
   const handleAIHelperToggle = () => setShowAIHelper(!showAIHelper);
 
-  const handleSuggestionApply = (suggestion) => {
+  const handleSuggestionApply = useCallback((suggestion) => {
     setMenuSpecification(prevSpec => ({ ...prevSpec, ...suggestion }));
-  };
+  }, []);
 
   if (isLoading) return <Loader2 className="h-16 w-16 animate-spin mx-auto mt-16" />;
   if (error) return <ErrorFallback error={error} />;
@@ -90,24 +94,30 @@ const CreateMenu = () => {
           </TabsList>
           <TabsContent value="specify">
             <Card className="p-6">
-              <MenuSpecificationForm onSubmit={handleSpecificationSubmit} initialData={initialData} />
-              {showAIHelper && <AIHelper specification={menuSpecification} onSuggestionApply={handleSuggestionApply} />}
+              <Suspense fallback={<Loader2 className="h-8 w-8 animate-spin mx-auto" />}>
+                <MenuSpecificationForm onSubmit={handleSpecificationSubmit} initialData={initialData} />
+                {showAIHelper && <AIHelper specification={menuSpecification} onSuggestionApply={handleSuggestionApply} />}
+              </Suspense>
             </Card>
           </TabsContent>
           <TabsContent value="generate">
             <Card className="p-6">
               {menuSpecification && userSettings && (
-                <MenuGenerator {...menuSpecification} userSettings={userSettings} />
+                <Suspense fallback={<Loader2 className="h-8 w-8 animate-spin mx-auto" />}>
+                  <MenuGenerator {...menuSpecification} userSettings={userSettings} />
+                </Suspense>
               )}
             </Card>
           </TabsContent>
         </Tabs>
       </div>
-      <SettingsModal 
-        isOpen={isSettingsOpen} 
-        onClose={() => setIsSettingsOpen(false)} 
-        onUpdate={handleSettingsUpdate}
-      />
+      <Suspense fallback={null}>
+        <SettingsModal 
+          isOpen={isSettingsOpen} 
+          onClose={() => setIsSettingsOpen(false)} 
+          onUpdate={handleSettingsUpdate}
+        />
+      </Suspense>
     </ErrorBoundary>
   );
 };
