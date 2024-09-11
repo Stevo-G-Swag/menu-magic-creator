@@ -18,14 +18,15 @@ const defaultSettings = {
   defaultModel: 'gpt-3.5-turbo',
 };
 
-const SettingsModal = ({ isOpen, onClose, onUpdate }) => {
+const SettingsModal = ({ isOpen, onClose, onUpdate, initialSettings }) => {
   const [settings, setSettings] = useState(defaultSettings);
   const { toast } = useToast();
 
   useEffect(() => {
-    const savedSettings = JSON.parse(localStorage.getItem('userSettings')) || {};
-    setSettings(prevSettings => ({ ...prevSettings, ...savedSettings }));
-  }, []);
+    if (initialSettings) {
+      setSettings(prevSettings => ({ ...prevSettings, ...initialSettings }));
+    }
+  }, [initialSettings]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -45,7 +46,6 @@ const SettingsModal = ({ isOpen, onClose, onUpdate }) => {
         body: JSON.stringify(settings),
       });
       if (!response.ok) throw new Error('Failed to save settings');
-      localStorage.setItem('userSettings', JSON.stringify(settings));
       onUpdate(settings);
       toast({ title: "Settings saved successfully" });
       onClose();

@@ -13,9 +13,12 @@ const MenuSpecificationForm = React.lazy(() => import('../components/MenuSpecifi
 const SettingsModal = React.lazy(() => import('../components/SettingsModal'));
 const AIHelper = React.lazy(() => import('../components/AIHelper'));
 
+const OPENAI_API_KEY = "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";
+
 const fetchInitialData = async () => {
-  // Simulating API call with reduced delay
+  console.log('Fetching initial data...');
   await new Promise(resolve => setTimeout(resolve, 500));
+  console.log('Initial data fetched');
   return { /* Initial data structure */ };
 };
 
@@ -32,15 +35,20 @@ const CreateMenu = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showAIHelper, setShowAIHelper] = useState(false);
   const [userSettings, setUserSettings] = useState(null);
+  const [freeCallsRemaining, setFreeCallsRemaining] = useState(5);
   const location = useLocation();
   const { toast } = useToast();
 
+  console.log('Rendering CreateMenu component');
+
   const { data: initialData, isLoading, error } = useQuery(['initialData'], fetchInitialData, {
-    staleTime: 60000, // Cache for 1 minute
-    retry: 2, // Retry twice before showing error
+    staleTime: 60000,
+    retry: 2,
+    onError: (error) => console.error('Error fetching initial data:', error),
   });
 
   useEffect(() => {
+    console.log('CreateMenu useEffect running');
     if (location.state?.template) {
       setMenuSpecification(location.state.template);
     }
@@ -48,28 +56,62 @@ const CreateMenu = () => {
     if (savedSettings) {
       setUserSettings(savedSettings);
     } else {
-      setIsSettingsOpen(true);
+      setUserSettings({ openaiApiKey: OPENAI_API_KEY });
+    }
+    const savedFreeCalls = localStorage.getItem('freeCallsRemaining');
+    if (savedFreeCalls) {
+      setFreeCallsRemaining(parseInt(savedFreeCalls, 10));
     }
   }, [location]);
 
   const handleSpecificationSubmit = useCallback((specification) => {
+    console.log('Specification submitted:', specification);
     setMenuSpecification(specification);
   }, []);
 
   const handleSettingsUpdate = useCallback((newSettings) => {
+    console.log('Updating settings:', newSettings);
     setUserSettings(newSettings);
     localStorage.setItem('userSettings', JSON.stringify(newSettings));
     toast({ title: "Settings updated successfully" });
   }, [toast]);
 
-  const handleAIHelperToggle = () => setShowAIHelper(!showAIHelper);
+  const handleAIHelperToggle = () => {
+    console.log('Toggling AI Helper');
+    setShowAIHelper(!showAIHelper);
+  };
 
   const handleSuggestionApply = useCallback((suggestion) => {
+    console.log('Applying suggestion:', suggestion);
     setMenuSpecification(prevSpec => ({ ...prevSpec, ...suggestion }));
   }, []);
 
-  if (isLoading) return <Loader2 className="h-16 w-16 animate-spin mx-auto mt-16" />;
-  if (error) return <ErrorFallback error={error} />;
+  const handleApiCall = useCallback(() => {
+    if (freeCallsRemaining > 0) {
+      setFreeCallsRemaining(prev => {
+        const newValue = prev - 1;
+        localStorage.setItem('freeCallsRemaining', newValue.toString());
+        return newValue;
+      });
+    } else {
+      toast({
+        title: "Free trial ended",
+        description: "Please add your own API key in the settings to continue.",
+        variant: "destructive",
+      });
+    }
+  }, [freeCallsRemaining, toast]);
+
+  if (isLoading) {
+    console.log('Loading initial data...');
+    return <Loader2 className="h-16 w-16 animate-spin mx-auto mt-16" />;
+  }
+  if (error) {
+    console.error('Error loading initial data:', error);
+    return <ErrorFallback error={error} />;
+  }
+
+  console.log('Rendering CreateMenu content');
 
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
@@ -104,7 +146,7 @@ const CreateMenu = () => {
             <Card className="p-6">
               {menuSpecification && userSettings && (
                 <Suspense fallback={<Loader2 className="h-8 w-8 animate-spin mx-auto" />}>
-                  <MenuGenerator {...menuSpecification} userSettings={userSettings} />
+                  <MenuGenerator {...menuSpecification} userSettings={userSettings} onApiCall={handleApiCall} freeCallsRemaining={freeCallsRemaining} />
                 </Suspense>
               )}
             </Card>
@@ -116,6 +158,7 @@ const CreateMenu = () => {
           isOpen={isSettingsOpen} 
           onClose={() => setIsSettingsOpen(false)} 
           onUpdate={handleSettingsUpdate}
+          initialSettings={userSettings}
         />
       </Suspense>
     </ErrorBoundary>

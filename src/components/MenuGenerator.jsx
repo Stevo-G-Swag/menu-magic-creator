@@ -7,19 +7,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
-const MenuGenerator = ({ title, agents, tools, customizations, userSettings }) => {
+const MenuGenerator = ({ title, agents, tools, customizations, userSettings, onApiCall, freeCallsRemaining }) => {
   const [generatedMenu, setGeneratedMenu] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [sandboxUrl, setSandboxUrl] = useState(null);
-  const [selectedProvider, setSelectedProvider] = useState(userSettings.defaultProvider);
-  const [selectedModel, setSelectedModel] = useState(userSettings.defaultModel);
+  const [selectedProvider, setSelectedProvider] = useState(userSettings.defaultProvider || 'openai');
+  const [selectedModel, setSelectedModel] = useState(userSettings.defaultModel || 'gpt-3.5-turbo');
   const { toast } = useToast();
 
+  console.log('Rendering MenuGenerator component');
+
   const handleGenerate = async () => {
+    console.log('Generating menu...');
     setIsLoading(true);
     setError(null);
     try {
+      if (freeCallsRemaining <= 0 && !userSettings.openaiApiKey) {
+        throw new Error('No free calls remaining. Please add your API key in settings.');
+      }
+      onApiCall();
       const response = await fetch('/api/generate-menu', {
         method: 'POST',
         headers: {
@@ -32,12 +39,14 @@ const MenuGenerator = ({ title, agents, tools, customizations, userSettings }) =
           customizations, 
           provider: selectedProvider,
           model: selectedModel,
+          apiKey: userSettings.openaiApiKey,
         }),
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
+      console.log('Menu generated:', data);
       setGeneratedMenu(data.menu);
       setSandboxUrl(data.sandboxUrl);
     } catch (error) {
@@ -50,7 +59,6 @@ const MenuGenerator = ({ title, agents, tools, customizations, userSettings }) =
 
   useEffect(() => {
     if (generatedMenu) {
-      // Simulate real-time updates
       const interval = setInterval(() => {
         setGeneratedMenu(prevMenu => {
           if (!prevMenu) return null;
@@ -66,20 +74,25 @@ const MenuGenerator = ({ title, agents, tools, customizations, userSettings }) =
   }, [generatedMenu]);
 
   const handleMenuItemClick = async (item) => {
-    // Simulate running a task or building an agent
+    console.log('Menu item clicked:', item);
     setIsLoading(true);
     try {
+      if (freeCallsRemaining <= 0 && !userSettings.openaiApiKey) {
+        throw new Error('No free calls remaining. Please add your API key in settings.');
+      }
+      onApiCall();
       const response = await fetch('/api/run-task', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ task: item, provider: selectedProvider, model: selectedModel }),
+        body: JSON.stringify({ task: item, provider: selectedProvider, model: selectedModel, apiKey: userSettings.openaiApiKey }),
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const result = await response.json();
+      console.log('Task result:', result);
       toast({
         title: "Task Completed",
         description: result.message,
@@ -132,6 +145,13 @@ const MenuGenerator = ({ title, agents, tools, customizations, userSettings }) =
         <Alert variant="destructive">
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {freeCallsRemaining > 0 && (
+        <Alert>
+          <AlertTitle>Free Trial</AlertTitle>
+          <AlertDescription>{`You have ${freeCallsRemaining} free calls remaining.`}</AlertDescription>
         </Alert>
       )}
 
