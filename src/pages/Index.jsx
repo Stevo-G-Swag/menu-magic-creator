@@ -9,13 +9,23 @@ const Index = () => {
   const hasSignedUpBefore = localStorage.getItem('hasSignedUpBefore') === 'true';
 
   useEffect(() => {
+    console.log('Index component mounted');
+    console.log(`isAuthenticated: ${isAuthenticated}, hasSignedUpBefore: ${hasSignedUpBefore}`);
+
     if (isAuthenticated) {
+      console.log('User is authenticated, redirecting to dashboard');
       navigate('/dashboard');
     } else if (hasSignedUpBefore) {
+      console.log('User has signed up before, redirecting to login');
       navigate('/login');
     } else {
+      console.log('New user, redirecting to signup');
       navigate('/signup');
     }
+
+    return () => {
+      console.log('Index component unmounted');
+    };
   }, [isAuthenticated, hasSignedUpBefore, navigate]);
 
   return (

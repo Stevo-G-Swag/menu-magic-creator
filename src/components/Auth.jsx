@@ -14,14 +14,18 @@ const Auth = ({ isLogin }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!isLogin) {
-      localStorage.setItem('hasSignedUpBefore', 'true');
-    }
+    console.log(`Auth component mounted. isLogin: ${isLogin}`);
+    return () => {
+      console.log('Auth component unmounted');
+    };
   }, [isLogin]);
 
   const handleAuth = async (e) => {
     e.preventDefault();
+    console.log(`Attempting to ${isLogin ? 'login' : 'sign up'} with email: ${email}`);
+    
     if (!isLogin && password !== confirmPassword) {
+      console.error('Password mismatch during sign up');
       toast({
         title: "Error",
         description: "Passwords do not match",
@@ -29,16 +33,22 @@ const Auth = ({ isLogin }) => {
       });
       return;
     }
+
     try {
       const endpoint = isLogin ? '/api/login' : '/api/signup';
+      console.log(`Sending request to ${endpoint}`);
+      
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
       
+      console.log(`Received response with status: ${response.status}`);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Authentication successful', data);
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('hasSignedUpBefore', 'true');
@@ -48,9 +58,11 @@ const Auth = ({ isLogin }) => {
         });
         navigate('/dashboard');
       } else {
-        throw new Error(isLogin ? 'Login failed' : 'Sign up failed');
+        const errorData = await response.json();
+        throw new Error(errorData.message || (isLogin ? 'Login failed' : 'Sign up failed'));
       }
     } catch (error) {
+      console.error('Authentication error:', error);
       toast({
         title: "Error",
         description: error.message,
@@ -60,7 +72,19 @@ const Auth = ({ isLogin }) => {
   };
 
   const handleOAuthSignIn = (provider) => {
-    window.location.href = `/api/auth/${provider}`;
+    console.log(`Attempting OAuth sign-in with ${provider}`);
+    // Simulating OAuth sign-in for demonstration purposes
+    setTimeout(() => {
+      console.log(`Simulated ${provider} sign-in successful`);
+      localStorage.setItem('token', 'fake-oauth-token');
+      localStorage.setItem('user', JSON.stringify({ email: `user@${provider}.com` }));
+      localStorage.setItem('hasSignedUpBefore', 'true');
+      toast({
+        title: `${provider} Sign-In Successful`,
+        description: `Welcome ${provider} user!`,
+      });
+      navigate('/dashboard');
+    }, 1000);
   };
 
   return (

@@ -10,38 +10,36 @@ import CreateMenu from "./pages/CreateMenu";
 import Templates from "./pages/Templates";
 import ErrorHandler from "./components/ErrorHandler";
 import Auth from "./components/Auth";
+import ErrorLogger from "./components/ErrorLogger";
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  const isAuthenticated = !!localStorage.getItem('token');
-  const hasSignedUpBefore = localStorage.getItem('hasSignedUpBefore') === 'true';
+  console.log('App component rendered');
 
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <BrowserRouter>
-          <div className="flex flex-col min-h-screen">
-            <Header />
-            <main className="flex-grow">
-              <Routes>
-                <Route path="/" element={
-                  isAuthenticated ? <Navigate to="/dashboard" /> :
-                  hasSignedUpBefore ? <Navigate to="/login" /> :
-                  <Navigate to="/signup" />
-                } />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/create" element={<CreateMenu />} />
-                <Route path="/templates" element={<Templates />} />
-                <Route path="/error" element={<ErrorHandler />} />
-                <Route path="/login" element={<Auth isLogin={true} />} />
-                <Route path="/signup" element={<Auth isLogin={false} />} />
-              </Routes>
-            </main>
-            <Footer />
-          </div>
-        </BrowserRouter>
+        <ErrorLogger>
+          <Toaster />
+          <BrowserRouter>
+            <div className="flex flex-col min-h-screen">
+              <Header />
+              <main className="flex-grow">
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/create" element={<CreateMenu />} />
+                  <Route path="/templates" element={<Templates />} />
+                  <Route path="/error" element={<ErrorHandler />} />
+                  <Route path="/login" element={<Auth isLogin={true} />} />
+                  <Route path="/signup" element={<Auth isLogin={false} />} />
+                </Routes>
+              </main>
+              <Footer />
+            </div>
+          </BrowserRouter>
+        </ErrorLogger>
       </TooltipProvider>
     </QueryClientProvider>
   );
