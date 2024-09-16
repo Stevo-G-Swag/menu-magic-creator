@@ -12,56 +12,58 @@ const ErrorLogger = ({ children }) => {
     return CryptoJS.AES.decrypt(hashedKey, secretPassphrase).toString(CryptoJS.enc.Utf8);
   };
 
+  const logError = async (error) => {
+    console.error('Error logged:', error);
+    setErrors(prev => [...prev, { message: error.message, stack: error.stack, timestamp: new Date() }]);
+
+    // Log to backend service
+    try {
+      const hashedApiKey = import.meta.env.VITE_HASHED_API_KEY || "U2FsdGVkX1+1234567890abcdefghijklmnopqrstuvwxyz=";
+      const unhashedApiKey = unhashApiKey(hashedApiKey);
+
+      await fetch('/api/log-error', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': unhashedApiKey,
+        },
+        body: JSON.stringify({ error: { message: error.message, stack: error.stack } }),
+      });
+    } catch (logError) {
+      console.error('Failed to log error to backend:', logError);
+    }
+  };
+
   useEffect(() => {
     const originalConsoleError = console.error;
     console.error = (...args) => {
-      setErrors(prev => [...prev, { message: args.join(' '), timestamp: new Date() }]);
+      logError(new Error(args.join(' ')));
       originalConsoleError.apply(console, args);
     };
 
     const handleError = (event) => {
-      setErrors(prev => [...prev, { message: event.error.message, stack: event.error.stack, timestamp: new Date() }]);
+      logError(event.error);
     };
 
     window.addEventListener('error', handleError);
-
-    const intervalId = setInterval(async () => {
-      if (errors.length === 0) return;
-
-      try {
-        const hashedApiKey = import.meta.env.VITE_HASHED_API_KEY || "U2FsdGVkX1+1234567890abcdefghijklmnopqrstuvwxyz=";
-        const unhashedApiKey = unhashApiKey(hashedApiKey);
-
-        const response = await fetch('/api/scan-for-errors', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-API-Key': unhashedApiKey,
-          },
-          body: JSON.stringify({ errors }),
-        });
-        const data = await response.json();
-        if (data.newErrors && data.newErrors.length > 0) {
-          data.newErrors.forEach(error => {
-            toast({
-              title: isDevelopment ? "New Error Detected (Dev Mode)" : "An issue occurred",
-              description: isDevelopment ? error.message : "We're working on it.",
-              variant: "destructive",
-            });
-          });
-        }
-        setErrors([]);
-      } catch (error) {
-        console.error('Error scanning for errors:', error);
-      }
-    }, isDevelopment ? 10000 : 30000);
+    window.addEventListener('unhandledrejection', (event) => handleError(new Error(event.reason)));
 
     return () => {
       console.error = originalConsoleError;
       window.removeEventListener('error', handleError);
-      clearInterval(intervalId);
+      window.removeEventListener('unhandledrejection', handleError);
     };
-  }, [toast, errors]);
+  }, []);
+
+  useEffect(() => {
+    if (errors.length > 0 && isDevelopment) {
+      toast({
+        title: "New Error Detected (Dev Mode)",
+        description: errors[errors.length - 1].message,
+        variant: "destructive",
+      });
+    }
+  }, [errors, isDevelopment, toast]);
 
   return (
     <div>
