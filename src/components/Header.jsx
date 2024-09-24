@@ -24,6 +24,9 @@ const Header = () => {
               <li><Link to="/dashboard" className="text-gray-600 hover:text-gray-900">Dashboard</Link></li>
               <li><Link to="/create" className="text-gray-600 hover:text-gray-900">Create Menu</Link></li>
               <li><Link to="/templates" className="text-gray-600 hover:text-gray-900">Templates</Link></li>
+              <li><Link to="/agent-builder" className="text-gray-600 hover:text-gray-900">Agent Builder</Link></li>
+              <li><Link to="/tool-library" className="text-gray-600 hover:text-gray-900">Tool Library</Link></li>
+              <li><Link to="/collaboration" className="text-gray-600 hover:text-gray-900">Collaboration</Link></li>
               {isLoggedIn ? (
                 <li><Button onClick={handleLogout} variant="outline">Logout</Button></li>
               ) : (

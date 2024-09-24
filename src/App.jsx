@@ -11,6 +11,9 @@ import Templates from "./pages/Templates";
 import ErrorHandler from "./components/ErrorHandler";
 import Auth from "./components/Auth";
 import ErrorLogger from "./components/ErrorLogger";
+import AgentBuilder from "./pages/AgentBuilder";
+import ToolLibrary from "./pages/ToolLibrary";
+import Collaboration from "./pages/Collaboration";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +37,9 @@ const App = () => {
                   <Route path="/error" element={<ErrorHandler />} />
                   <Route path="/login" element={<Auth isLogin={true} />} />
                   <Route path="/signup" element={<Auth isLogin={false} />} />
+                  <Route path="/agent-builder" element={<AgentBuilder />} />
+                  <Route path="/tool-library" element={<ToolLibrary />} />
+                  <Route path="/collaboration" element={<Collaboration />} />
                 </Routes>
               </main>
               <Footer />
