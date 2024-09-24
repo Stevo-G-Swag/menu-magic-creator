@@ -24,7 +24,13 @@ const CreateMenu = () => {
 
   useEffect(() => {
     if (location.state?.template) {
-      setMenuSpecification(location.state.template);
+      const { agents, tools, customizations } = location.state.template;
+      setMenuSpecification({
+        title: location.state.template.name,
+        agents,
+        tools,
+        customizations
+      });
     }
     const savedSettings = JSON.parse(localStorage.getItem('userSettings'));
     if (savedSettings) {

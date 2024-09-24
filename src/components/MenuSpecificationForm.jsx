@@ -13,14 +13,24 @@ const MenuSpecificationForm = ({ onSubmit, initialData, showAIHelper }) => {
   const [title, setTitle] = useState(initialData?.title || '');
   const [agents, setAgents] = useState(initialData?.agents || [{ name: '', description: '' }]);
   const [tools, setTools] = useState(initialData?.tools || [{ name: '', description: '' }]);
+  const [customizations, setCustomizations] = useState(initialData?.customizations || {});
   const [errors, setErrors] = useState({});
   const [isValid, setIsValid] = useState(false);
   const [previewItems, setPreviewItems] = useState([]);
   const { toast } = useToast();
 
   useEffect(() => {
+    if (initialData) {
+      setTitle(initialData.title || '');
+      setAgents(initialData.agents || [{ name: '', description: '' }]);
+      setTools(initialData.tools || [{ name: '', description: '' }]);
+      setCustomizations(initialData.customizations || {});
+    }
+  }, [initialData]);
+
+  useEffect(() => {
     validateForm();
-  }, [title, agents, tools]);
+  }, [title, agents, tools, customizations]);
 
   const handleAgentChange = (index, field, value) => {
     const newAgents = [...agents];
@@ -32,6 +42,10 @@ const MenuSpecificationForm = ({ onSubmit, initialData, showAIHelper }) => {
     const newTools = [...tools];
     newTools[index][field] = value;
     setTools(newTools);
+  };
+
+  const handleCustomizationChange = (key, value) => {
+    setCustomizations(prev => ({ ...prev, [key]: value }));
   };
 
   const addAgent = () => setAgents([...agents, { name: '', description: '' }]);
@@ -51,14 +65,14 @@ const MenuSpecificationForm = ({ onSubmit, initialData, showAIHelper }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (isValid) {
-      onSubmit({ title, agents, tools, menuItems: previewItems });
+      onSubmit({ title, agents, tools, customizations, menuItems: previewItems });
     } else {
       toast({ title: "Validation Error", description: "Please fill in all required fields.", variant: "destructive" });
     }
   };
 
   const saveSpecification = () => {
-    const specification = JSON.stringify({ title, agents, tools });
+    const specification = JSON.stringify({ title, agents, tools, customizations });
     localStorage.setItem('menuSpecification', specification);
     toast({ title: "Specification Saved", description: "Your menu specification has been saved locally." });
   };
@@ -66,10 +80,11 @@ const MenuSpecificationForm = ({ onSubmit, initialData, showAIHelper }) => {
   const loadSpecification = () => {
     const savedSpecification = localStorage.getItem('menuSpecification');
     if (savedSpecification) {
-      const { title: savedTitle, agents: savedAgents, tools: savedTools } = JSON.parse(savedSpecification);
+      const { title: savedTitle, agents: savedAgents, tools: savedTools, customizations: savedCustomizations } = JSON.parse(savedSpecification);
       setTitle(savedTitle);
       setAgents(savedAgents);
       setTools(savedTools);
+      setCustomizations(savedCustomizations);
       toast({ title: "Specification Loaded", description: "Your saved menu specification has been loaded." });
     } else {
       toast({ title: "No Saved Specification", description: "No saved menu specification found.", variant: "destructive" });
@@ -169,6 +184,23 @@ const MenuSpecificationForm = ({ onSubmit, initialData, showAIHelper }) => {
           </Button>
         </div>
 
+        <div>
+          <Label>Customizations</Label>
+          <Input
+            value={customizations.theme || ''}
+            onChange={(e) => handleCustomizationChange('theme', e.target.value)}
+            placeholder="Theme (e.g., light, dark)"
+            className="mb-2"
+          />
+          <Input
+            value={customizations.language || ''}
+            onChange={(e) => handleCustomizationChange('language', e.target.value)}
+            placeholder="Language"
+            className="mb-2"
+          />
+          {/* Add more customization fields as needed */}
+        </div>
+
         <div className="flex space-x-4">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -202,10 +234,10 @@ const MenuSpecificationForm = ({ onSubmit, initialData, showAIHelper }) => {
 
         <div>
           <h3 className="text-lg font-semibold mb-2">Menu Preview</h3>
-          <MenuPreview title={title} agents={agents} tools={tools} onUpdate={setPreviewItems} />
+          <MenuPreview title={title} agents={agents} tools={tools} customizations={customizations} onUpdate={setPreviewItems} />
         </div>
 
-        {showAIHelper && <AIHelper specification={{ title, agents, tools }} />}
+        {showAIHelper && <AIHelper specification={{ title, agents, tools, customizations }} />}
       </form>
     </TooltipProvider>
   );
