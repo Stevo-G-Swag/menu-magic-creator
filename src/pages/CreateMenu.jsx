@@ -51,10 +51,6 @@ const CreateMenu = () => {
     setShowAIHelper(!showAIHelper);
   };
 
-  const handleSuggestionApply = useCallback((suggestion) => {
-    setMenuSpecification(prevSpec => ({ ...prevSpec, ...suggestion }));
-  }, []);
-
   const handleApiCall = useCallback(() => {
     if (freeCallsRemaining > 0) {
       setFreeCallsRemaining(prev => {
@@ -99,7 +95,7 @@ const CreateMenu = () => {
         </TabsList>
         <TabsContent value="specify">
           <Card className="p-6">
-            <MenuSpecificationForm onSubmit={handleSpecificationSubmit} />
+            <MenuSpecificationForm onSubmit={handleSpecificationSubmit} initialData={menuSpecification} />
           </Card>
         </TabsContent>
         <TabsContent value="generate">

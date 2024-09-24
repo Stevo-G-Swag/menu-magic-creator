@@ -6,10 +6,7 @@ const Templates = () => {
   const navigate = useNavigate();
 
   const handleSelectTemplate = (template) => {
-    // Store the selected template in localStorage
-    localStorage.setItem('selectedTemplate', JSON.stringify(template));
-    // Navigate to the Index page
-    navigate('/');
+    navigate('/create', { state: { template } });
   };
 
   return (
