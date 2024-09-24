@@ -4,8 +4,10 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { executeTool } from '../utils/toolExecutor';
 
 const MenuGenerator = ({ title, agents, tools, customizations, userSettings, onApiCall, freeCallsRemaining }) => {
   const [generatedMenu, setGeneratedMenu] = useState(null);
@@ -14,6 +16,7 @@ const MenuGenerator = ({ title, agents, tools, customizations, userSettings, onA
   const [sandboxUrl, setSandboxUrl] = useState(null);
   const [selectedProvider, setSelectedProvider] = useState(userSettings.defaultProvider || 'openai');
   const [selectedModel, setSelectedModel] = useState(userSettings.defaultModel || 'gpt-3.5-turbo');
+  const [toolInput, setToolInput] = useState('');
   const { toast } = useToast();
 
   console.log('Rendering MenuGenerator component');
@@ -73,33 +76,27 @@ const MenuGenerator = ({ title, agents, tools, customizations, userSettings, onA
     }
   }, [generatedMenu]);
 
-  const handleMenuItemClick = async (item) => {
-    console.log('Menu item clicked:', item);
+  const handleToolExecution = async (tool) => {
     setIsLoading(true);
+    setError(null);
     try {
       if (freeCallsRemaining <= 0 && !userSettings.openaiApiKey) {
         throw new Error('No free calls remaining. Please add your API key in settings.');
       }
       onApiCall();
-      const response = await fetch('/api/run-task', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ task: item, provider: selectedProvider, model: selectedModel, apiKey: userSettings.openaiApiKey }),
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const result = await response.json();
-      console.log('Task result:', result);
+      const result = await executeTool(tool, toolInput, userSettings.openaiApiKey);
       toast({
-        title: "Task Completed",
-        description: result.message,
+        title: "Tool Executed",
+        description: `Result: ${result}`,
       });
     } catch (error) {
-      console.error('Error running task:', error);
-      setError(`Failed to run task: ${error.message}`);
+      console.error('Error executing tool:', error);
+      setError(`Failed to execute tool: ${error.message}`);
+      toast({
+        title: "Error",
+        description: `Failed to execute tool: ${error.message}`,
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -166,12 +163,25 @@ const MenuGenerator = ({ title, agents, tools, customizations, userSettings, onA
                     <AccordionTrigger>{category.name}</AccordionTrigger>
                     <AccordionContent>
                       {category.items.map((item, itemIndex) => (
-                        <div
-                          key={itemIndex}
-                          className="cursor-pointer hover:bg-red-600 p-2 rounded"
-                          onClick={() => handleMenuItemClick(item)}
-                        >
-                          {item}
+                        <div key={itemIndex} className="mb-4">
+                          <div className="font-semibold">{item.name}</div>
+                          <div className="text-sm mb-2">{item.description}</div>
+                          <Input
+                            placeholder="Enter input for tool"
+                            value={toolInput}
+                            onChange={(e) => setToolInput(e.target.value)}
+                            className="mb-2"
+                          />
+                          <Button
+                            onClick={() => handleToolExecution(item)}
+                            disabled={isLoading}
+                            className="w-full"
+                          >
+                            {isLoading ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : null}
+                            Execute Tool
+                          </Button>
                         </div>
                       ))}
                     </AccordionContent>

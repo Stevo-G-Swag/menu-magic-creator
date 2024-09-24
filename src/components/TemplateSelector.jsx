@@ -11,8 +11,8 @@ const templates = [
       { name: "Chat Assistant", description: "A general-purpose AI assistant capable of engaging in conversations on various topics." }
     ],
     tools: [
-      { name: "Web Search", description: "Search the internet for up-to-date information on any topic." },
-      { name: "Text Summarization", description: "Summarize long pieces of text into concise summaries." }
+      { name: "Web Search", description: "Search the internet for up-to-date information on any topic.", type: "openai" },
+      { name: "Text Summarization", description: "Summarize long pieces of text into concise summaries.", type: "openai" }
     ],
     customizations: {
       theme: "light",
@@ -29,9 +29,9 @@ const templates = [
       { name: "Reminder Bot", description: "Sends timely reminders for upcoming tasks and deadlines." }
     ],
     tools: [
-      { name: "Calendar Integration", description: "Sync tasks with your calendar for better time management." },
-      { name: "Priority Sorting", description: "Sort tasks by importance and urgency using AI algorithms." },
-      { name: "Task Breakdown", description: "Break down complex tasks into manageable subtasks." }
+      { name: "Calendar Integration", description: "Sync tasks with your calendar for better time management.", type: "openai" },
+      { name: "Priority Sorting", description: "Sort tasks by importance and urgency using AI algorithms.", type: "openai" },
+      { name: "Task Breakdown", description: "Break down complex tasks into manageable subtasks.", type: "openai" }
     ],
     customizations: {
       theme: "dark",
@@ -49,10 +49,10 @@ const templates = [
       { name: "Hypothesis Generator", description: "Proposes new research hypotheses based on existing findings and data patterns." }
     ],
     tools: [
-      { name: "Academic Database Access", description: "Search and retrieve scholarly articles from various academic databases." },
-      { name: "Statistical Analysis", description: "Perform advanced statistical tests and data modeling." },
-      { name: "Visualization Creator", description: "Generate charts, graphs, and other visualizations from research data." },
-      { name: "Citation Manager", description: "Organize and format citations in various academic styles." }
+      { name: "Academic Database Access", description: "Search and retrieve scholarly articles from various academic databases.", type: "openai" },
+      { name: "Statistical Analysis", description: "Perform advanced statistical tests and data modeling.", type: "openai" },
+      { name: "Visualization Creator", description: "Generate charts, graphs, and other visualizations from research data.", type: "openai" },
+      { name: "Citation Manager", description: "Organize and format citations in various academic styles.", type: "openai" }
     ],
     customizations: {
       theme: "light",
@@ -71,10 +71,10 @@ const templates = [
       { name: "Documentation Writer", description: "Generates and updates code documentation, including inline comments and README files." }
     ],
     tools: [
-      { name: "Syntax Highlighter", description: "Provides syntax highlighting for multiple programming languages." },
-      { name: "Version Control", description: "Integrates with Git for code versioning and collaboration." },
-      { name: "Code Formatter", description: "Automatically formats code to project-specific or language-specific standards." },
-      { name: "Dependency Analyzer", description: "Analyzes and manages project dependencies, suggesting updates and identifying conflicts." }
+      { name: "Syntax Highlighter", description: "Provides syntax highlighting for multiple programming languages.", type: "openai" },
+      { name: "Version Control", description: "Integrates with Git for code versioning and collaboration.", type: "openai" },
+      { name: "Code Formatter", description: "Automatically formats code to project-specific or language-specific standards.", type: "openai" },
+      { name: "Dependency Analyzer", description: "Analyzes and manages project dependencies, suggesting updates and identifying conflicts.", type: "openai" }
     ],
     customizations: {
       theme: "dark",
@@ -93,10 +93,10 @@ const templates = [
       { name: "Content Editor", description: "Proofreads and refines generated content for grammar, style, and tone consistency." }
     ],
     tools: [
-      { name: "Keyword Research", description: "Identifies relevant keywords and phrases for content optimization." },
-      { name: "Image Generator", description: "Creates custom images and graphics using AI-powered tools." },
-      { name: "Content Calendar", description: "Manages and schedules content publication across various channels." },
-      { name: "Sentiment Analyzer", description: "Analyzes the emotional tone of content to ensure it matches the intended audience." }
+      { name: "Keyword Research", description: "Identifies relevant keywords and phrases for content optimization.", type: "openai" },
+      { name: "Image Generator", description: "Creates custom images and graphics using AI-powered tools.", type: "openai" },
+      { name: "Content Calendar", description: "Manages and schedules content publication across various channels.", type: "openai" },
+      { name: "Sentiment Analyzer", description: "Analyzes the emotional tone of content to ensure it matches the intended audience.", type: "openai" }
     ],
     customizations: {
       theme: "light",
@@ -121,7 +121,7 @@ const TemplateSelector = ({ onSelectTemplate }) => {
               <h4 className="font-semibold mb-2">Agents:</h4>
               <ul className="list-disc pl-5">
                 {template.agents.map((agent, index) => (
-                  <li key={index}>{agent.name}</li>
+                  <li key={index}>{agent.name} - {agent.description}</li>
                 ))}
               </ul>
             </div>
@@ -129,7 +129,7 @@ const TemplateSelector = ({ onSelectTemplate }) => {
               <h4 className="font-semibold mb-2">Tools:</h4>
               <ul className="list-disc pl-5">
                 {template.tools.map((tool, index) => (
-                  <li key={index}>{tool.name}</li>
+                  <li key={index}>{tool.name} - {tool.description} (Type: {tool.type})</li>
                 ))}
               </ul>
             </div>
