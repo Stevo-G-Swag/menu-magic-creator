@@ -1,67 +1,94 @@
-import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import React, { useState, useEffect } from 'react';
 import { useToast } from "@/components/ui/use-toast";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { captureScreenshot } from '../utils/screenshotUtil';
+import { multiOnService } from '../services/multiOnService';
+import { examplePresets } from '../utils/examplePresets';
 
-const AIHelper = ({ specification, onSuggestionApply }) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [suggestions, setSuggestions] = useState([]);
+const AIHelper = () => {
+  const [isActive, setIsActive] = useState(false);
+  const [currentPage, setCurrentPage] = useState('');
+  const [screenshot, setScreenshot] = useState(null);
+  const [preset, setPreset] = useState(null);
   const { toast } = useToast();
 
-  const generateSuggestion = async () => {
-    setIsLoading(true);
+  useEffect(() => {
+    if (isActive) {
+      const interval = setInterval(async () => {
+        const newScreenshot = await captureScreenshot();
+        setScreenshot(newScreenshot);
+        
+        const pageContent = await multiOnService.getPageContent();
+        setCurrentPage(pageContent);
+        
+        // Send screenshot and page content to AI for analysis
+        const aiSuggestions = await multiOnService.getAISuggestions(newScreenshot, pageContent);
+        // Handle AI suggestions (e.g., display them to the user)
+      }, 5000); // Update every 5 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [isActive]);
+
+  const handleActivate = async () => {
     try {
-      const response = await fetch('/api/generate-suggestion', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(specification),
+      await multiOnService.requestControl();
+      setIsActive(true);
+      toast({
+        title: "AI Helper Activated",
+        description: "AI Helper is now monitoring your screen.",
       });
-      if (!response.ok) throw new Error('Failed to generate suggestion');
-      const data = await response.json();
-      setSuggestions(prevSuggestions => [...prevSuggestions, data.suggestion]);
     } catch (error) {
-      console.error('Error generating suggestion:', error);
-      toast({ title: "Failed to generate suggestion", variant: "destructive" });
-    } finally {
-      setIsLoading(false);
+      toast({
+        title: "Activation Failed",
+        description: "Failed to activate AI Helper. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
-  const applySuggestion = (suggestion) => {
-    onSuggestionApply(suggestion);
-    toast({ title: "Suggestion applied successfully" });
+  const handleDeactivate = () => {
+    multiOnService.releaseControl();
+    setIsActive(false);
+    setScreenshot(null);
+    toast({
+      title: "AI Helper Deactivated",
+      description: "AI Helper is no longer monitoring your screen.",
+    });
+  };
+
+  const handleShowPreset = () => {
+    const userLevel = ['beginner', 'medium', 'advanced'][Math.floor(Math.random() * 3)];
+    const newPreset = examplePresets[userLevel][Math.floor(Math.random() * examplePresets[userLevel].length)];
+    setPreset(newPreset);
   };
 
   return (
-    <Card className="mt-6">
+    <Card>
       <CardHeader>
         <CardTitle>AI Helper</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="mb-4">Need help improving your menu specification? Let our AI assistant suggest enhancements!</p>
-        <Button onClick={generateSuggestion} disabled={isLoading}>
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Generating...
-            </>
-          ) : 'Generate Suggestion'}
-        </Button>
-        {suggestions.length > 0 && (
-          <Accordion type="single" collapsible className="mt-4">
-            {suggestions.map((suggestion, index) => (
-              <AccordionItem key={index} value={`item-${index}`}>
-                <AccordionTrigger>Suggestion {index + 1}</AccordionTrigger>
-                <AccordionContent>
-                  <p>{suggestion}</p>
-                  <Button onClick={() => applySuggestion(suggestion)} className="mt-2">Apply Suggestion</Button>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        )}
+        <div className="space-y-4">
+          <Button onClick={isActive ? handleDeactivate : handleActivate}>
+            {isActive ? 'Deactivate AI Helper' : 'Activate AI Helper'}
+          </Button>
+          <Button onClick={handleShowPreset}>Show Random Preset</Button>
+          {isActive && screenshot && (
+            <div>
+              <h3 className="font-semibold">Current Screenshot:</h3>
+              <img src={screenshot} alt="Current page" className="mt-2 max-w-full h-auto" />
+            </div>
+          )}
+          {preset && (
+            <div>
+              <h3 className="font-semibold">Example Preset:</h3>
+              <p>{preset.description}</p>
+              <pre className="mt-2 p-2 bg-gray-100 rounded">{preset.code}</pre>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

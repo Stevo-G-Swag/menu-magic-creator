@@ -13,7 +13,6 @@ import AIHelper from '../components/AIHelper';
 const OPENAI_API_KEY = "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";
 
 const CreateMenu = () => {
-  console.log('Rendering CreateMenu component');
   const [menuSpecification, setMenuSpecification] = useState(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showAIHelper, setShowAIHelper] = useState(false);
@@ -24,7 +23,6 @@ const CreateMenu = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    console.log('CreateMenu useEffect running');
     if (location.state?.template) {
       setMenuSpecification(location.state.template);
     }
@@ -40,24 +38,20 @@ const CreateMenu = () => {
   }, [location]);
 
   const handleSpecificationSubmit = useCallback((specification) => {
-    console.log('Specification submitted:', specification);
     setMenuSpecification(specification);
   }, []);
 
   const handleSettingsUpdate = useCallback((newSettings) => {
-    console.log('Updating settings:', newSettings);
     setUserSettings(newSettings);
     localStorage.setItem('userSettings', JSON.stringify(newSettings));
     toast({ title: "Settings updated successfully" });
   }, [toast]);
 
   const handleAIHelperToggle = () => {
-    console.log('Toggling AI Helper');
     setShowAIHelper(!showAIHelper);
   };
 
   const handleSuggestionApply = useCallback((suggestion) => {
-    console.log('Applying suggestion:', suggestion);
     setMenuSpecification(prevSpec => ({ ...prevSpec, ...suggestion }));
   }, []);
 
@@ -78,11 +72,8 @@ const CreateMenu = () => {
   }, [freeCallsRemaining, toast]);
 
   if (isLoading) {
-    console.log('Loading initial data...');
     return <Loader2 className="h-16 w-16 animate-spin mx-auto mt-16" />;
   }
-
-  console.log('Rendering CreateMenu content');
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -99,6 +90,8 @@ const CreateMenu = () => {
         </div>
       </div>
       
+      {showAIHelper && <AIHelper />}
+
       <Tabs defaultValue="specify" className="space-y-8">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="specify">Specify Menu</TabsTrigger>
@@ -107,7 +100,6 @@ const CreateMenu = () => {
         <TabsContent value="specify">
           <Card className="p-6">
             <MenuSpecificationForm onSubmit={handleSpecificationSubmit} />
-            {showAIHelper && <AIHelper specification={menuSpecification} onSuggestionApply={handleSuggestionApply} />}
           </Card>
         </TabsContent>
         <TabsContent value="generate">
