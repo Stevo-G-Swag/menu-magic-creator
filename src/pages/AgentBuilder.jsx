@@ -1,41 +1,48 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { Loader2 } from "lucide-react";
+
+const fetchAgents = async () => {
+  const response = await fetch('/api/agents');
+  if (!response.ok) {
+    throw new Error('Failed to fetch agents');
+  }
+  return response.json();
+};
+
+const createAgent = async (newAgent) => {
+  const response = await fetch('/api/agents', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(newAgent),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to create agent');
+  }
+  return response.json();
+};
 
 const AgentBuilder = () => {
   const [agentName, setAgentName] = useState('');
   const [agentDescription, setAgentDescription] = useState('');
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: agents, isLoading, error } = useQuery({
     queryKey: ['agents'],
-    queryFn: async () => {
-      const response = await fetch('/api/agents');
-      if (!response.ok) {
-        throw new Error('Failed to fetch agents');
-      }
-      return response.json();
-    },
+    queryFn: fetchAgents,
   });
 
   const createAgentMutation = useMutation({
-    mutationFn: async (newAgent) => {
-      const response = await fetch('/api/agents', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newAgent),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to create agent');
-      }
-      return response.json();
-    },
+    mutationFn: createAgent,
     onSuccess: () => {
+      queryClient.invalidateQueries(['agents']);
       toast({
         title: "Agent Created",
         description: "Your new agent has been successfully created.",
@@ -57,7 +64,7 @@ const AgentBuilder = () => {
     createAgentMutation.mutate({ name: agentName, description: agentDescription });
   };
 
-  if (isLoading) return <div>Loading agents...</div>;
+  if (isLoading) return <Loader2 className="h-8 w-8 animate-spin" />;
   if (error) return <div>Error loading agents: {error.message}</div>;
 
   return (
@@ -81,7 +88,12 @@ const AgentBuilder = () => {
               onChange={(e) => setAgentDescription(e.target.value)}
               required
             />
-            <Button type="submit">Create Agent</Button>
+            <Button type="submit" disabled={createAgentMutation.isLoading}>
+              {createAgentMutation.isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Create Agent
+            </Button>
           </form>
         </CardContent>
       </Card>

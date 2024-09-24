@@ -4,6 +4,29 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { Loader2 } from "lucide-react";
+
+const fetchAgents = async () => {
+  const response = await fetch('/api/agents');
+  if (!response.ok) {
+    throw new Error('Failed to fetch agents');
+  }
+  return response.json();
+};
+
+const solveProblem = async (problemData) => {
+  const response = await fetch('/api/solve-problem', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(problemData),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to solve problem');
+  }
+  return response.json();
+};
 
 const Collaboration = () => {
   const [problem, setProblem] = useState('');
@@ -11,35 +34,16 @@ const Collaboration = () => {
 
   const { data: agents, isLoading: agentsLoading, error: agentsError } = useQuery({
     queryKey: ['agents'],
-    queryFn: async () => {
-      const response = await fetch('/api/agents');
-      if (!response.ok) {
-        throw new Error('Failed to fetch agents');
-      }
-      return response.json();
-    },
+    queryFn: fetchAgents,
   });
 
   const solveProblemMutation = useMutation({
-    mutationFn: async (problemData) => {
-      const response = await fetch('/api/solve-problem', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(problemData),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to solve problem');
-      }
-      return response.json();
-    },
+    mutationFn: solveProblem,
     onSuccess: (data) => {
       toast({
         title: "Problem Solved",
         description: "The agents have collaborated to solve the problem.",
       });
-      // Display the solution or next steps
       console.log(data.solution);
     },
     onError: (error) => {
@@ -56,7 +60,7 @@ const Collaboration = () => {
     solveProblemMutation.mutate({ problem, agents: agents.map(agent => agent.id) });
   };
 
-  if (agentsLoading) return <div>Loading agents...</div>;
+  if (agentsLoading) return <Loader2 className="h-8 w-8 animate-spin" />;
   if (agentsError) return <div>Error loading agents: {agentsError.message}</div>;
 
   return (
@@ -74,7 +78,15 @@ const Collaboration = () => {
               onChange={(e) => setProblem(e.target.value)}
               required
             />
-            <Button type="submit">Collaborate to Solve</Button>
+            <Button 
+              type="submit"
+              disabled={solveProblemMutation.isLoading}
+            >
+              {solveProblemMutation.isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Collaborate to Solve
+            </Button>
           </form>
         </CardContent>
       </Card>
