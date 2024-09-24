@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
+import ErrorBoundary from '../components/ErrorBoundary';
 
 const fetchTools = async () => {
   const response = await fetch('/api/tools');
@@ -33,6 +34,8 @@ const ToolLibrary = () => {
   const { data: tools, isLoading, error } = useQuery({
     queryKey: ['tools'],
     queryFn: fetchTools,
+    retry: 3,
+    retryDelay: 1000,
   });
 
   const addToolMutation = useMutation({
@@ -61,30 +64,32 @@ const ToolLibrary = () => {
   if (error) return <div>Error loading tools: {error.message}</div>;
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Tool Library</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {tools && tools.map((tool) => (
-          <Card key={tool.id}>
-            <CardHeader>
-              <CardTitle>{tool.name}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="mb-4">{tool.description}</p>
-              <Button 
-                onClick={() => handleAddTool(tool.id)}
-                disabled={addToolMutation.isLoading}
-              >
-                {addToolMutation.isLoading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : null}
-                Add to Workspace
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
+    <ErrorBoundary>
+      <div className="container mx-auto p-4">
+        <h1 className="text-2xl font-bold mb-4">Tool Library</h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {tools && tools.map((tool) => (
+            <Card key={tool.id}>
+              <CardHeader>
+                <CardTitle>{tool.name}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="mb-4">{tool.description}</p>
+                <Button 
+                  onClick={() => handleAddTool(tool.id)}
+                  disabled={addToolMutation.isLoading}
+                >
+                  {addToolMutation.isLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  Add to Workspace
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 };
 

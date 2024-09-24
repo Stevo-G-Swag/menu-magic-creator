@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
+import ErrorBoundary from '../components/ErrorBoundary';
 
 const fetchAgents = async () => {
   const response = await fetch('/api/agents');
@@ -37,6 +38,8 @@ const AgentBuilder = () => {
   const { data: agents, isLoading, error } = useQuery({
     queryKey: ['agents'],
     queryFn: fetchAgents,
+    retry: 3,
+    retryDelay: 1000,
   });
 
   const createAgentMutation = useMutation({
@@ -68,49 +71,51 @@ const AgentBuilder = () => {
   if (error) return <div>Error loading agents: {error.message}</div>;
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Agent Builder</h1>
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Create New Agent</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleCreateAgent} className="space-y-4">
-            <Input
-              placeholder="Agent Name"
-              value={agentName}
-              onChange={(e) => setAgentName(e.target.value)}
-              required
-            />
-            <Input
-              placeholder="Agent Description"
-              value={agentDescription}
-              onChange={(e) => setAgentDescription(e.target.value)}
-              required
-            />
-            <Button type="submit" disabled={createAgentMutation.isLoading}>
-              {createAgentMutation.isLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              Create Agent
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-      <h2 className="text-xl font-semibold mb-2">Existing Agents</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {agents && agents.map((agent) => (
-          <Card key={agent.id}>
-            <CardHeader>
-              <CardTitle>{agent.name}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>{agent.description}</p>
-            </CardContent>
-          </Card>
-        ))}
+    <ErrorBoundary>
+      <div className="container mx-auto p-4">
+        <h1 className="text-2xl font-bold mb-4">Agent Builder</h1>
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Create New Agent</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleCreateAgent} className="space-y-4">
+              <Input
+                placeholder="Agent Name"
+                value={agentName}
+                onChange={(e) => setAgentName(e.target.value)}
+                required
+              />
+              <Input
+                placeholder="Agent Description"
+                value={agentDescription}
+                onChange={(e) => setAgentDescription(e.target.value)}
+                required
+              />
+              <Button type="submit" disabled={createAgentMutation.isLoading}>
+                {createAgentMutation.isLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                Create Agent
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+        <h2 className="text-xl font-semibold mb-2">Existing Agents</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {agents && agents.map((agent) => (
+            <Card key={agent.id}>
+              <CardHeader>
+                <CardTitle>{agent.name}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>{agent.description}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 };
 
