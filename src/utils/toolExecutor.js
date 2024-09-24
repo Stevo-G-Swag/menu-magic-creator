@@ -1,5 +1,11 @@
 import { Configuration, OpenAIApi } from 'openai';
-import { Octokit } from '@octokit/rest';
+
+let Octokit;
+try {
+  Octokit = require('@octokit/rest').Octokit;
+} catch (error) {
+  console.warn('Octokit package not found. GitHub tools will not be available.');
+}
 
 let HfInference;
 try {
@@ -50,6 +56,10 @@ const executeHuggingFaceTool = async (tool, input, apiKey) => {
 };
 
 const executeGitHubTool = async (tool, input, apiKey) => {
+  if (!Octokit) {
+    throw new Error('Octokit package is not installed. Unable to execute GitHub tool.');
+  }
+
   const octokit = new Octokit({ auth: apiKey });
 
   try {
