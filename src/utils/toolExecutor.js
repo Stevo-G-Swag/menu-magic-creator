@@ -1,6 +1,12 @@
 import { Configuration, OpenAIApi } from 'openai';
-import { HfInference } from '@huggingface/inference';
 import { Octokit } from '@octokit/rest';
+
+let HfInference;
+try {
+  HfInference = require('@huggingface/inference').HfInference;
+} catch (error) {
+  console.warn('HuggingFace inference package not found. HuggingFace tools will not be available.');
+}
 
 const executeOpenAITool = async (tool, input, apiKey) => {
   const configuration = new Configuration({ apiKey });
@@ -21,6 +27,10 @@ const executeOpenAITool = async (tool, input, apiKey) => {
 };
 
 const executeHuggingFaceTool = async (tool, input, apiKey) => {
+  if (!HfInference) {
+    throw new Error('HuggingFace inference package is not installed. Unable to execute HuggingFace tool.');
+  }
+  
   const hf = new HfInference(apiKey);
 
   try {
@@ -43,7 +53,6 @@ const executeGitHubTool = async (tool, input, apiKey) => {
   const octokit = new Octokit({ auth: apiKey });
 
   try {
-    // This is a placeholder implementation. Adjust according to your specific GitHub tool needs.
     const response = await octokit.rest.search.repos({
       q: input,
       sort: 'stars',
